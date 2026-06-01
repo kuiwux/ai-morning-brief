@@ -16,7 +16,7 @@ on:
       server_url:
         description: 'PWA server URL'
         required: false
-        default: 'http://192.168.1.133:8899'
+        default: 'http://localhost:8899'
 
 jobs:
   build-ios:
@@ -36,15 +36,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Override server URL (if manual trigger)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Override server URL (manual trigger or SERVER_URL env)
+        if: github.event_name == 'workflow_dispatch' || env.SERVER_URL != '' || true
+        env:
+          SERVER_URL: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.server_url || vars.SERVER_URL || 'http://localhost:8899' }}
         run: |
+          echo "Expanding SERVER_URL env var in capacitor.config.json..."
           node -e "
           const fs = require('fs');
           const cfg = JSON.parse(fs.readFileSync('capacitor.config.json', 'utf8'));
-          cfg.server.url = '${{ github.event.inputs.server_url }}';
+          const url = cfg.server.url || '';
+          // Expand \${SERVER_URL:-default} syntax
+          const expanded = url.replace(/\\\${SERVER_URL:-([^}]+)}/g, process.env.SERVER_URL || '$1');
+          cfg.server.url = expanded;
+          console.log('server.url set to:', expanded);
           fs.writeFileSync('capacitor.config.json', JSON.stringify(cfg, null, 2));
           "
+
+      # ============ API Key 认证 ============
+      # 需要在 GitHub Secrets 中设置:
+      #   - APPSTORE_CONNECT_API_KEY: p8 私钥内容（多行）
+      #   - APPSTORE_CONNECT_KEY_ID: Key ID
+      #   - APPSTORE_CONNECT_ISSUER_ID: Issuer ID
+      #   - APPLE_TEAM_ID: Apple Developer Team ID
+      - name: Setup App Store Connect API Key
+        env:
+          APPSTORE_CONNECT_API_KEY: ${{ secrets.APPSTORE_CONNECT_API_KEY }}
+        run: |
+          echo "$APPSTORE_CONNECT_API_KEY" > ~/api_key.p8
+          chmod 600 ~/api_key.p8
+          echo "✅ API Key written to ~/api_key.p8"
 
       - name: Build Capacitor web assets
         run: npx cap sync ios
@@ -60,6 +81,8 @@ jobs:
           pod install
 
       - name: Generate ExportOptions.plist
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           mkdir -p ios
           cat > ios/ExportOptions.plist << 'PLIST'
@@ -68,20 +91,32 @@ jobs:
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>development</string>
+              <string>app-store</string>
               <key>teamID</key>
-              <string></string>
+              <string>__APPLE_TEAM_ID__</string>
               <key>compileBitcode</key>
               <false/>
               <key>signingStyle</key>
-              <string>manual</string>
+              <string>automatic</string>
           </dict>
           </plist>
           PLIST
+          sed -i '' "s/__APPLE_TEAM_ID__/${APPLE_TEAM_ID}/g" ios/ExportOptions.plist
 
-      - name: Build IPA
+      - name: Archive & Export IPA
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPSTORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
+          APPSTORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
         run: |
           cd ios/App
+
+          echo "🔐 Using API Key authentication"
+          echo "   Team ID: $APPLE_TEAM_ID"
+          echo "   Key ID: $APPSTORE_CONNECT_KEY_ID"
+
+          # Archive
+          echo "📦 Archiving..."
           xcodebuild \
             -workspace App.xcworkspace \
             -scheme App \
@@ -89,15 +124,47 @@ jobs:
             -configuration Release \
             -archivePath "${{ github.workspace }}/build/App.xcarchive" \
             archive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            -authenticationKeyPath ~/api_key.p8 \
+            -authenticationKeyID "$APPSTORE_CONNECT_KEY_ID" \
+            -authenticationKeyIssuerID "$APPSTORE_CONNECT_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic
 
+          # Export IPA
+          echo "📤 Exporting IPA..."
           xcodebuild \
             -exportArchive \
             -archivePath "${{ github.workspace }}/build/App.xcarchive" \
             -exportPath "${{ github.workspace }}/build/ipa" \
-            -exportOptionsPlist "${{ github.workspace }}/ios/ExportOptions.plist"
+            -exportOptionsPlist "${{ github.workspace }}/ios/ExportOptions.plist" \
+            -authenticationKeyPath ~/api_key.p8 \
+            -authenticationKeyID "$APPSTORE_CONNECT_KEY_ID" \
+            -authenticationKeyIssuerID "$APPSTORE_CONNECT_ISSUER_ID"
+
+          echo "✅ Build complete!"
+          ls -la "${{ github.workspace }}/build/ipa/"
+
+      # ============ 上传到 App Store Connect ============
+      - name: Upload IPA to App Store Connect
+        env:
+          APPSTORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
+          APPSTORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
+        run: |
+          IPA_PATH=$(find "${{ github.workspace }}/build/ipa" -name "*.ipa" | head -1)
+          if [ -z "$IPA_PATH" ]; then
+            echo "❌ No IPA found to upload"
+            exit 1
+          fi
+          echo "📤 Uploading IPA to App Store Connect..."
+          echo "   File: $IPA_PATH"
+
+          xcrun altool --upload-app \
+            -f "$IPA_PATH" \
+            --type ios \
+            --apiKey "$APPSTORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APPSTORE_CONNECT_ISSUER_ID"
+
+          echo "✅ IPA uploaded to App Store Connect!"
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
