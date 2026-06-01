@@ -36,22 +36,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Override server URL (manual trigger or SERVER_URL env)
-        if: github.event_name == 'workflow_dispatch' || env.SERVER_URL != '' || true
-        env:
-          SERVER_URL: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.server_url || vars.SERVER_URL || 'http://localhost:8899' }}
+      - name: Override server URL
         run: |
-          echo "Expanding SERVER_URL env var in capacitor.config.json..."
-          node -e "
-          const fs = require('fs');
-          const cfg = JSON.parse(fs.readFileSync('capacitor.config.json', 'utf8'));
-          const url = cfg.server.url || '';
-          // Expand \${SERVER_URL:-default} syntax
-          const expanded = url.replace(/\\\${SERVER_URL:-([^}]+)}/g, process.env.SERVER_URL || '$1');
-          cfg.server.url = expanded;
-          console.log('server.url set to:', expanded);
-          fs.writeFileSync('capacitor.config.json', JSON.stringify(cfg, null, 2));
-          "
+          echo "Server URL: $SERVER_URL"
+          if [ -n "$SERVER_URL" ]; then
+            sed -i '' "s|http://localhost:8899|$SERVER_URL|g" capacitor.config.json
+          fi
+          cat capacitor.config.json
+        env:
+          SERVER_URL: ${{ github.event.inputs.server_url || 'http://localhost:8899' }}
 
       # ============ API Key 认证 ============
       # 需要在 GitHub Secrets 中设置:
