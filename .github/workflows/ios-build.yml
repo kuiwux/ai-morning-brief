@@ -117,11 +117,16 @@ jobs:
           echo "📤 Uploading IPA to App Store Connect..."
           echo "   File: $IPA_PATH"
 
-          xcrun altool --upload-app \
+          UPLOAD_OUTPUT=$(xcrun altool --upload-app \
             -f "$IPA_PATH" \
             --type ios \
             --apiKey "$APPSTORE_CONNECT_KEY_ID" \
-            --apiIssuer "$APPSTORE_CONNECT_ISSUER_ID"
+            --apiIssuer "$APPSTORE_CONNECT_ISSUER_ID" 2>&1)
+          echo "$UPLOAD_OUTPUT"
+          if echo "$UPLOAD_OUTPUT" | grep -q "FAILED\|Error\|error"; then
+            echo "❌ Upload failed!"
+            exit 1
+          fi
 
           echo "✅ IPA uploaded to App Store Connect!"
 
