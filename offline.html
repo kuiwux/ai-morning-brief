@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>硅谷AI晨报 · 离线</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", "STSong", "Times New Roman", serif;
+    background: #FAF7F2;
+    color: #3C3C3C;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .newspaper {
+    max-width: 480px;
+    width: 100%;
+    background: #FEFCF8;
+    border: 2px solid #D4B87A;
+    border-radius: 4px;
+    padding: 40px 32px;
+    box-shadow:
+      0 2px 8px rgba(196, 160, 106, 0.12),
+      0 8px 32px rgba(139, 119, 80, 0.08),
+      inset 0 0 0 8px #FAF7F2;
+    position: relative;
+  }
+  .newspaper::before,
+  .newspaper::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    width: 1px;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 4px,
+      rgba(196, 160, 106, 0.25) 4px,
+      rgba(196, 160, 106, 0.25) 5px
+    );
+  }
+  .newspaper::before { left: 16px; }
+  .newspaper::after { right: 16px; }
+  .masthead {
+    text-align: center;
+    border-top: 3px double #C4A06A;
+    border-bottom: 3px double #C4A06A;
+    padding: 16px 0;
+    margin-bottom: 28px;
+  }
+  .masthead h1 {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #2C2416;
+    text-transform: uppercase;
+    font-family: "Noto Serif SC", "Songti SC", serif;
+  }
+  .masthead .subtitle {
+    font-size: 11px;
+    color: #8B7750;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .dateline {
+    text-align: center;
+    font-size: 12px;
+    color: #8B7750;
+    border-top: 1px solid #E5E0D8;
+    border-bottom: 1px solid #E5E0D8;
+    padding: 8px 0;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+  .headline {
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: #2C2416;
+    text-align: center;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+  .body-text {
+    font-size: 14px;
+    line-height: 2;
+    color: #5C5346;
+    text-align: justify;
+    text-indent: 2em;
+    margin-bottom: 12px;
+  }
+  .separator {
+    text-align: center;
+    color: #C4A06A;
+    font-size: 18px;
+    letter-spacing: 8px;
+    margin: 20px 0;
+    user-select: none;
+  }
+  .tip-box {
+    background: #F0E6D3;
+    border-left: 3px solid #C4A06A;
+    padding: 14px 18px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: #6B5D44;
+    line-height: 1.8;
+    border-radius: 0 4px 4px 0;
+  }
+  .tip-box strong {
+    color: #C4A06A;
+  }
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: #A89870;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #E67E22;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+  .retry-btn {
+    display: block;
+    width: 100%;
+    margin-top: 24px;
+    padding: 12px;
+    background: linear-gradient(135deg, #C4A06A, #A8874F);
+    color: #FFF;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+  }
+  .retry-btn:hover {
+    background: linear-gradient(135deg, #D4B87A, #B8975F);
+    box-shadow: 0 4px 12px rgba(196, 160, 106, 0.3);
+  }
+  .retry-btn:active {
+    transform: scale(0.98);
+  }
+</style>
+</head>
+<body>
+<div class="newspaper">
+  <div class="masthead">
+    <h1>硅谷AI晨报</h1>
+    <div class="subtitle">Silicon Valley AI Morning Post</div>
+  </div>
+
+  <div class="dateline">
+    <span id="dateDisplay">—— · ——</span>
+  </div>
+
+  <div class="status-indicator">
+    <span class="status-dot"></span>
+    <span>当前处于离线模式</span>
+  </div>
+
+  <div class="headline">
+    暂时无法连接网络
+  </div>
+
+  <p class="body-text">
+    尊敬的读者，您当前似乎处于离线状态。本刊依赖网络实时同步全球AI资讯，
+    请检查您的网络连接后重新加载页面。
+  </p>
+
+  <div class="separator">✦ ✦ ✦</div>
+
+  <p class="body-text">
+    硅谷AI晨报致力于为您提供最新、最准确的AI行业资讯。
+    我们会在网络恢复后第一时间为您呈现今日要闻。
+  </p>
+
+  <div class="tip-box">
+    <strong>📰 提示：</strong><br>
+    您可以先下拉刷新页面重试。如果问题持续，请确认 Wi-Fi 或蜂窝数据已开启，
+    并确认您可以访问 <code style="background:#E5D8C0;padding:2px 6px;border-radius:2px;font-size:11px;">192.168.1.133:8899</code>。
+  </div>
+
+  <button class="retry-btn" onclick="location.reload()">
+    重 新 加 载
+  </button>
+</div>
+
+<script>
+document.getElementById('dateDisplay').textContent =
+  new Date().toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long'
+  });
+</script>
+</body>
+</html>
