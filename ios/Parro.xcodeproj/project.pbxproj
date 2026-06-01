@@ -1,36 +1,36 @@
-     1|// !$*UTF8*$!
-     2|{
-     3|	archiveVersion = 1;
-     4|	classes = {
-     5|	};
-     6|	objectVersion = 56;
-     7|	objects = {
-     8|
-     9|/* Begin PBXBuildFile section */
-    10|		A00000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000010 /* AppDelegate.swift */; };
-    11|		A00000000000000000000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000011 /* SceneDelegate.swift */; };
-    12|		A00000000000000000000003 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000012 /* ViewController.swift */; };
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A00000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000010 /* AppDelegate.swift */; };
+		A00000000000000000000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000011 /* SceneDelegate.swift */; };
+		A00000000000000000000003 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000012 /* ViewController.swift */; };
 		A00000000000000000000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000014 /* Assets.xcassets */; };
-    13|/* End PBXBuildFile section */
-    14|
-    15|/* Begin PBXFileReference section */
-    16|		A00000000000000000000010 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-    17|		A00000000000000000000011 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-    18|		A00000000000000000000012 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-    19|		A00000000000000000000013 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-    20|		A00000000000000000000014 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-    21|		A00000000000000000000020 /* Parro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Parro.app; sourceTree = BUILT_PRODUCTS_DIR; };
-    22|/* End PBXFileReference section */
-    23|
-    24|/* Begin PBXFrameworksBuildPhase section */
-    25|		A00000000000000000000030 /* Frameworks */ = {
-    26|			isa = PBXFrameworksBuildPhase;
-    27|			buildActionMask = 2147483647;
-    28|			files = (
-    29|			);
-    30|			runOnlyForDeploymentPostprocessing = 0;
-    31|		};
-    32|/* End PBXFrameworksBuildPhase section */
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A00000000000000000000010 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A00000000000000000000011 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		A00000000000000000000012 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		A00000000000000000000013 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A00000000000000000000014 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A00000000000000000000020 /* Parro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Parro.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A00000000000000000000030 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A00000000000000000000061 /* Resources */ = {
@@ -42,306 +42,305 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-    33|
-    34|/* Begin PBXGroup section */
-    35|		A00000000000000000000040 = {
-    36|			isa = PBXGroup;
-    37|			children = (
-    38|				A00000000000000000000041 /* Parro */,
-    39|				A00000000000000000000042 /* Products */,
-    40|			);
-    41|			sourceTree = "<group>";
-    42|		};
-    43|		A00000000000000000000041 /* Parro */ = {
-    44|			isa = PBXGroup;
-    45|			children = (
-    46|				A00000000000000000000010 /* AppDelegate.swift */,
-    47|				A00000000000000000000011 /* SceneDelegate.swift */,
-    48|				A00000000000000000000012 /* ViewController.swift */,
-    49|				A00000000000000000000013 /* Info.plist */,
-    50|				A00000000000000000000014 /* Assets.xcassets */,
-    51|			);
-    52|			path = Parro;
-    53|			sourceTree = "<group>";
-    54|		};
-    55|		A00000000000000000000042 /* Products */ = {
-    56|			isa = PBXGroup;
-    57|			children = (
-    58|				A00000000000000000000020 /* Parro.app */,
-    59|			);
-    60|			name = Products;
-    61|			sourceTree = "<group>";
-    62|		};
-    63|/* End PBXGroup section */
-    64|
-    65|/* Begin PBXNativeTarget section */
-    66|		A00000000000000000000050 /* Parro */ = {
-    67|			isa = PBXNativeTarget;
-    68|			buildConfigurationList = A00000000000000000000080 /* Build configuration list for PBXNativeTarget "Parro" */;
-    69|			buildPhases = (
-    70|				A00000000000000000000060 /* Sources */,
-    71|				A00000000000000000000030 /* Frameworks */,
+
+/* Begin PBXGroup section */
+		A00000000000000000000040 = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000041 /* Parro */,
+				A00000000000000000000042 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A00000000000000000000041 /* Parro */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000010 /* AppDelegate.swift */,
+				A00000000000000000000011 /* SceneDelegate.swift */,
+				A00000000000000000000012 /* ViewController.swift */,
+				A00000000000000000000013 /* Info.plist */,
+				A00000000000000000000014 /* Assets.xcassets */,
+			);
+			path = Parro;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000042 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000020 /* Parro.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A00000000000000000000050 /* Parro */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000000080 /* Build configuration list for PBXNativeTarget "Parro" */;
+			buildPhases = (
+				A00000000000000000000060 /* Sources */,
+				A00000000000000000000030 /* Frameworks */,
 				A00000000000000000000061 /* Resources */,
-    72|			);
-    73|			buildRules = (
-    74|			);
-    75|			dependencies = (
-    76|			);
-    77|			name = Parro;
-    78|			productName = Parro;
-    79|			productReference = A00000000000000000000020 /* Parro.app */;
-    80|			productType = "com.apple.product-type.application";
-    81|		};
-    82|/* End PBXNativeTarget section */
-    83|
-    84|/* Begin PBXProject section */
-    85|		A00000000000000000000070 /* Project object */ = {
-    86|			isa = PBXProject;
-    87|			attributes = {
-    88|				BuildIndependentTargetsInParallel = 1;
-    89|				LastSwiftUpdateCheck = 1600;
-    90|				LastUpgradeCheck = 1600;
-    91|				TargetAttributes = {
-    92|					A00000000000000000000050 = {
-    93|						CreatedOnToolsVersion = 16.0;
-    94|					};
-    95|				};
-    96|			};
-    97|			buildConfigurationList = A00000000000000000000071 /* Build configuration list for PBXProject "Parro" */;
-    98|			compatibilityVersion = "Xcode 14.0";
-    99|			developmentRegion = "zh-Hans";
-   100|			hasScannedForEncodings = 0;
-   101|			knownRegions = (
-   102|				en,
-   103|				Base,
-   104|				"zh-Hans",
-   105|			);
-   106|			mainGroup = A00000000000000000000040;
-   107|			productRefGroup = A00000000000000000000042 /* Products */;
-   108|			projectDirPath = "";
-   109|			projectRoot = "";
-   110|			targets = (
-   111|				A00000000000000000000050 /* Parro */,
-   112|			);
-   113|		};
-   114|/* End PBXProject section */
-   115|
-   116|/* Begin PBXSourcesBuildPhase section */
-   117|		A00000000000000000000060 /* Sources */ = {
-   118|			isa = PBXSourcesBuildPhase;
-   119|			buildActionMask = 2147483647;
-   120|			files = (
-   121|				A00000000000000000000001 /* AppDelegate.swift in Sources */,
-   122|				A00000000000000000000002 /* SceneDelegate.swift in Sources */,
-   123|				A00000000000000000000003 /* ViewController.swift in Sources */,
-   124|			);
-   125|			runOnlyForDeploymentPostprocessing = 0;
-   126|		};
-   127|/* End PBXSourcesBuildPhase section */
-   128|
-   129|/* Begin XCBuildConfiguration section */
-   130|		A00000000000000000000090 /* Debug */ = {
-   131|			isa = XCBuildConfiguration;
-   132|			buildSettings = {
-   133|				ALWAYS_SEARCH_USER_PATHS = NO;
-   134|				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-   135|				CLANG_ANALYZER_NONNULL = YES;
-   136|				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-   137|				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-   138|				CLANG_ENABLE_MODULES = YES;
-   139|				CLANG_ENABLE_OBJC_ARC = YES;
-   140|				CLANG_ENABLE_OBJC_WEAK = YES;
-   141|				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-   142|				CLANG_WARN_BOOL_CONVERSION = YES;
-   143|				CLANG_WARN_COMMA = YES;
-   144|				CLANG_WARN_CONSTANT_CONVERSION = YES;
-   145|				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-   146|				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-   147|				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-   148|				CLANG_WARN_EMPTY_BODY = YES;
-   149|				CLANG_WARN_ENUM_CONVERSION = YES;
-   150|				CLANG_WARN_INFINITE_RECURSION = YES;
-   151|				CLANG_WARN_INT_CONVERSION = YES;
-   152|				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-   153|				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-   154|				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-   155|				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-   156|				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-   157|				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-   158|				CLANG_WARN_STRICT_PROTOTYPES = YES;
-   159|				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-   160|				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-   161|				CLANG_WARN_UNREACHABLE_CODE = YES;
-   162|				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-   163|				COPY_PHASE_STRIP = NO;
-   164|				DEBUG_INFORMATION_FORMAT = dwarf;
-   165|				ENABLE_STRICT_OBJC_MSGSEND = YES;
-   166|				ENABLE_TESTABILITY = YES;
-   167|				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-   168|				GCC_C_LANGUAGE_STANDARD = gnu17;
-   169|				GCC_DYNAMIC_NO_PIC = NO;
-   170|				GCC_NO_COMMON_BLOCKS = YES;
-   171|				GCC_OPTIMIZATION_LEVEL = 0;
-   172|				GCC_PREPROCESSOR_DEFINITIONS = (
-   173|					"DEBUG=1",
-   174|					"$(inherited)",
-   175|				);
-   176|				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-   177|				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-   178|				GCC_WARN_UNDECLARED_SELECTOR = YES;
-   179|				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-   180|				GCC_WARN_UNUSED_FUNCTION = YES;
-   181|				GCC_WARN_UNUSED_VARIABLE = YES;
-   182|				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-   183|				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-   184|				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-   185|				MTL_FAST_MATH = YES;
-   186|				ONLY_ACTIVE_ARCH = YES;
-   187|				SDKROOT = iphoneos;
-   188|				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-   189|				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-   190|			};
-   191|			name = Debug;
-   192|		};
-   193|		A00000000000000000000091 /* Release */ = {
-   194|			isa = XCBuildConfiguration;
-   195|			buildSettings = {
-   196|				ALWAYS_SEARCH_USER_PATHS = NO;
-   197|				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-   198|				CLANG_ANALYZER_NONNULL = YES;
-   199|				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-   200|				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-   201|				CLANG_ENABLE_MODULES = YES;
-   202|				CLANG_ENABLE_OBJC_ARC = YES;
-   203|				CLANG_ENABLE_OBJC_WEAK = YES;
-   204|				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-   205|				CLANG_WARN_BOOL_CONVERSION = YES;
-   206|				CLANG_WARN_COMMA = YES;
-   207|				CLANG_WARN_CONSTANT_CONVERSION = YES;
-   208|				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-   209|				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-   210|				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-   211|				CLANG_WARN_EMPTY_BODY = YES;
-   212|				CLANG_WARN_ENUM_CONVERSION = YES;
-   213|				CLANG_WARN_INFINITE_RECURSION = YES;
-   214|				CLANG_WARN_INT_CONVERSION = YES;
-   215|				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-   216|				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-   217|				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-   218|				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-   219|				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-   220|				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-   221|				CLANG_WARN_STRICT_PROTOTYPES = YES;
-   222|				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-   223|				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-   224|				CLANG_WARN_UNREACHABLE_CODE = YES;
-   225|				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-   226|				COPY_PHASE_STRIP = NO;
-   227|				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-   228|				ENABLE_NS_ASSERTIONS = NO;
-   229|				ENABLE_STRICT_OBJC_MSGSEND = YES;
-   230|				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-   231|				GCC_C_LANGUAGE_STANDARD = gnu17;
-   232|				GCC_NO_COMMON_BLOCKS = YES;
-   233|				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-   234|				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-   235|				GCC_WARN_UNDECLARED_SELECTOR = YES;
-   236|				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-   237|				GCC_WARN_UNUSED_FUNCTION = YES;
-   238|				GCC_WARN_UNUSED_VARIABLE = YES;
-   239|				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-   240|				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-   241|				MTL_ENABLE_DEBUG_INFO = NO;
-   242|				MTL_FAST_MATH = YES;
-   243|				SDKROOT = iphoneos;
-   244|				SWIFT_COMPILATION_MODE = wholemodule;
-   245|				VALIDATE_PRODUCT = YES;
-   246|			};
-   247|			name = Release;
-   248|		};
-   249|		A000000000000000000000A0 /* Debug */ = {
-   250|			isa = XCBuildConfiguration;
-   251|			buildSettings = {
-   252|				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-   253|				CODE_SIGN_STYLE = Automatic;
-   254|				CURRENT_PROJECT_VERSION = 1;
-   255|				GENERATE_INFOPLIST_FILE = NO;
-   256|				INFOPLIST_FILE = Parro/Info.plist;
-   257|				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-   258|				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-   259|				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-   260|				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-   261|				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-   262|				LD_RUNPATH_SEARCH_PATHS = (
-   263|					"$(inherited)",
-   264|					"@executable_path/Frameworks",
-   265|				);
-   266|				MARKETING_VERSION = 1.0;
-   267|				PRODUCT_BUNDLE_IDENTIFIER = "com.parro.xiaofuinfo";
-   268|				PRODUCT_NAME = "$(TARGET_NAME)";
-   269|				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-   270|				SUPPORTS_MACCATALYST = NO;
-   271|				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-   272|				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-   273|				SWIFT_EMIT_LOC_STRINGS = YES;
-   274|				SWIFT_VERSION = 5.0;
-   275|				TARGETED_DEVICE_FAMILY = 1;
-   276|			};
-   277|			name = Debug;
-   278|		};
-   279|		A000000000000000000000A1 /* Release */ = {
-   280|			isa = XCBuildConfiguration;
-   281|			buildSettings = {
-   282|				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-   283|				CODE_SIGN_STYLE = Automatic;
-   284|				CURRENT_PROJECT_VERSION = 1;
-   285|				GENERATE_INFOPLIST_FILE = NO;
-   286|				INFOPLIST_FILE = Parro/Info.plist;
-   287|				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-   288|				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-   289|				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-   290|				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-   291|				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-   292|				LD_RUNPATH_SEARCH_PATHS = (
-   293|					"$(inherited)",
-   294|					"@executable_path/Frameworks",
-   295|				);
-   296|				MARKETING_VERSION = 1.0;
-   297|				PRODUCT_BUNDLE_IDENTIFIER = "com.parro.xiaofuinfo";
-   298|				PRODUCT_NAME = "$(TARGET_NAME)";
-   299|				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-   300|				SUPPORTS_MACCATALYST = NO;
-   301|				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-   302|				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-   303|				SWIFT_EMIT_LOC_STRINGS = YES;
-   304|				SWIFT_VERSION = 5.0;
-   305|				TARGETED_DEVICE_FAMILY = 1;
-   306|			};
-   307|			name = Release;
-   308|		};
-   309|/* End XCBuildConfiguration section */
-   310|
-   311|/* Begin XCConfigurationList section */
-   312|		A00000000000000000000071 /* Build configuration list for PBXProject "Parro" */ = {
-   313|			isa = XCConfigurationList;
-   314|			buildConfigurations = (
-   315|				A00000000000000000000090 /* Debug */,
-   316|				A00000000000000000000091 /* Release */,
-   317|			);
-   318|			defaultConfigurationIsVisible = 0;
-   319|			defaultConfigurationName = Release;
-   320|		};
-   321|		A00000000000000000000080 /* Build configuration list for PBXNativeTarget "Parro" */ = {
-   322|			isa = XCConfigurationList;
-   323|			buildConfigurations = (
-   324|				A000000000000000000000A0 /* Debug */,
-   325|				A000000000000000000000A1 /* Release */,
-   326|			);
-   327|			defaultConfigurationIsVisible = 0;
-   328|			defaultConfigurationName = Release;
-   329|		};
-   330|/* End XCConfigurationList section */
-   331|	};
-   332|	rootObject = A00000000000000000000070 /* Project object */;
-   333|}
-   334|
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Parro;
+			productName = Parro;
+			productReference = A00000000000000000000020 /* Parro.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A00000000000000000000070 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					A00000000000000000000050 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = A00000000000000000000071 /* Build configuration list for PBXProject "Parro" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "zh-Hans";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = A00000000000000000000040;
+			productRefGroup = A00000000000000000000042 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A00000000000000000000050 /* Parro */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A00000000000000000000060 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000001 /* AppDelegate.swift in Sources */,
+				A00000000000000000000002 /* SceneDelegate.swift in Sources */,
+				A00000000000000000000003 /* ViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A00000000000000000000090 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A00000000000000000000091 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A000000000000000000000A0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Parro/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.parro.xiaofuinfo";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A000000000000000000000A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Parro/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.parro.xiaofuinfo";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A00000000000000000000071 /* Build configuration list for PBXProject "Parro" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000000090 /* Debug */,
+				A00000000000000000000091 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000000080 /* Build configuration list for PBXNativeTarget "Parro" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A000000000000000000000A0 /* Debug */,
+				A000000000000000000000A1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A00000000000000000000070 /* Project object */;
+}
