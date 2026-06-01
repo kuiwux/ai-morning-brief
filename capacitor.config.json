@@ -1,10 +1,10 @@
 {
   "appId": "com.ai-morning-news.app",
-  "appName": "硅谷AI晨报",
+  "appName": "\u7845\u8c37AI\u6668\u62a5",
   "webDir": "www",
   "bundledWebRuntime": false,
   "server": {
-    "url": "${SERVER_URL:-http://localhost:8899}",
+    "url": "http://localhost:8899",
     "cleartext": true
   },
   "ios": {
