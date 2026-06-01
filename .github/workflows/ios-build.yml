@@ -4,12 +4,7 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'index.html'
-      - 'sw.js'
-      - 'manifest.json'
-      - 'push-notification.js'
-      - 'icons/**'
-      - 'capacitor.config.json'
+      - 'ios/**'
       - '.github/workflows/ios-build.yml'
   workflow_dispatch:
     inputs:
@@ -27,24 +22,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
       - name: Override server URL
+        if: ${{ github.event.inputs.server_url != '' }}
         run: |
           echo "Server URL: $SERVER_URL"
-          if [ -n "$SERVER_URL" ]; then
-            sed -i '' "s|http://localhost:8899|$SERVER_URL|g" capacitor.config.json
-          fi
-          cat capacitor.config.json
+          sed -i '' "s|http://localhost:8899|$SERVER_URL|g" ios/Parro/ViewController.swift
+          cat ios/Parro/ViewController.swift
         env:
-          SERVER_URL: ${{ github.event.inputs.server_url || 'http://localhost:8899' }}
+          SERVER_URL: ${{ github.event.inputs.server_url }}
 
       # ============ API Key 认证 ============
       # 需要在 GitHub Secrets 中设置:
@@ -60,64 +45,16 @@ jobs:
           chmod 600 ~/api_key.p8
           echo "✅ API Key written to ~/api_key.p8"
 
-      - name: Build Capacitor web assets
-        run: |
-          # 创建 www 目录并复制 web 资源供 Capacitor 使用
-          mkdir -p www
-          cp index.html www/ 2>/dev/null || true
-          cp *.js www/ 2>/dev/null || true
-          cp *.json www/ 2>/dev/null || true
-          cp *.html www/ 2>/dev/null || true
-          cp *.css www/ 2>/dev/null || true
-          cp -r icons www/ 2>/dev/null || true
-          cp -r splash www/ 2>/dev/null || true
-
-          # 检查并初始化 iOS 平台
-          echo "=== Capacitor check ==="
-          ls node_modules/.bin/cap && echo "cap binary found" || echo "cap NOT found"
-          ls node_modules/@capacitor/cli && echo "@capacitor/cli found" || echo "@capacitor/cli NOT found"
-          
-          echo "=== Add iOS platform ==="
-          npx @capacitor/cli add ios 2>&1
-          
-          echo "=== Sync ==="
-          npx @capacitor/cli sync ios 2>&1
-          
-          echo "=== ios/ contents ==="
-          ls -la ios/ 2>/dev/null || echo "ios/ not created" 
-
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '16.0'
 
-      - name: Install CocoaPods
+      - name: Verify ExportOptions.plist
         run: |
-          cd ios/App
-          pod install
-
-      - name: Generate ExportOptions.plist
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          mkdir -p ios
-          cat > ios/ExportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>teamID</key>
-              <string>__APPLE_TEAM_ID__</string>
-              <key>compileBitcode</key>
-              <false/>
-              <key>signingStyle</key>
-              <string>automatic</string>
-          </dict>
-          </plist>
-          PLIST
-          sed -i '' "s/__APPLE_TEAM_ID__/${APPLE_TEAM_ID}/g" ios/ExportOptions.plist
+          echo "=== ExportOptions.plist ==="
+          cat ios/ExportOptions.plist
+          plutil -lint ios/ExportOptions.plist
 
       - name: Archive & Export IPA
         env:
@@ -125,7 +62,7 @@ jobs:
           APPSTORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
           APPSTORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
         run: |
-          cd ios/App
+          cd ios
 
           echo "🔐 Using API Key authentication"
           echo "   Team ID: $APPLE_TEAM_ID"
@@ -134,11 +71,11 @@ jobs:
           # Archive
           echo "📦 Archiving..."
           xcodebuild \
-            -workspace App.xcworkspace \
-            -scheme App \
+            -project Parro.xcodeproj \
+            -scheme Parro \
             -sdk iphoneos \
             -configuration Release \
-            -archivePath "${{ github.workspace }}/build/App.xcarchive" \
+            -archivePath "${{ github.workspace }}/build/Parro.xcarchive" \
             archive \
             -authenticationKeyPath ~/api_key.p8 \
             -authenticationKeyID "$APPSTORE_CONNECT_KEY_ID" \
@@ -150,7 +87,7 @@ jobs:
           echo "📤 Exporting IPA..."
           xcodebuild \
             -exportArchive \
-            -archivePath "${{ github.workspace }}/build/App.xcarchive" \
+            -archivePath "${{ github.workspace }}/build/Parro.xcarchive" \
             -exportPath "${{ github.workspace }}/build/ipa" \
             -exportOptionsPlist "${{ github.workspace }}/ios/ExportOptions.plist" \
             -authenticationKeyPath ~/api_key.p8 \
