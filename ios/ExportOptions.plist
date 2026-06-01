@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>method</key>
-	<string>app-store</string>
+	<string>app-store-connect</string>
 	<key>teamID</key>
-	<string>L738P7W72L</string>
+	<string>W7BY6T84ZX</string>
 	<key>compileBitcode</key>
 	<false/>
 	<key>signingStyle</key>
