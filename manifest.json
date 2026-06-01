@@ -1,0 +1,110 @@
+{
+  "id": "ai-morning-news-pwa",
+  "name": "硅谷AI晨报",
+  "short_name": "AI晨报",
+  "description": "实时同步国内外AI资讯，最快5分钟刷新",
+  "dir": "ltr",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#FAF7F2",
+  "theme_color": "#C4A06A",
+  "orientation": "portrait-primary",
+  "categories": ["news", "technology"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/app-store-icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/screenshot-1-news-feed.png",
+      "sizes": "1290x2796",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "首页资讯流 - 分类筛选AI资讯"
+    },
+    {
+      "src": "screenshots/screenshot-2-article-detail.png",
+      "sizes": "1290x2796",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "文章详情 - AI智能摘要与深度分析"
+    },
+    {
+      "src": "screenshots/screenshot-3-ai-chat.png",
+      "sizes": "1290x2796",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "AI对话讨论 - 与AI深度探讨资讯"
+    },
+    {
+      "src": "screenshots/screenshot-4-voice-player.png",
+      "sizes": "1290x2796",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "语音播报 - 多音色AI朗读"
+    },
+    {
+      "src": "screenshots/screenshot-5-membership.png",
+      "sizes": "1290x2796",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "会员中心 - PRO订阅与偏好设置"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "最新资讯",
+      "short_name": "最新",
+      "description": "查看最新AI资讯",
+      "url": "/",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "隐私政策",
+      "short_name": "隐私",
+      "description": "查看隐私政策",
+      "url": "/privacy.html",
+      "icons": [
+        {
+          "src": "icons/favicon-32.png",
+          "sizes": "32x32"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}
