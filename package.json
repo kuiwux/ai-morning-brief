@@ -1,0 +1,16 @@
+{
+  "name": "05-pwa",
+  "version": "1.0.0",
+  "description": "``` 05-PWA/ ├── index.html              # 主页面（基于v2.0原型 + PWA增强） ├── manifest.json           # PWA 清单文件 ├── sw.js                   # Service Worker（离线缓存 + 推送处理） ├── push-notification.js    # 推送通知前端逻辑 ├── server.py               # 后端服务器（端口8899） ├── README.md               # 本文件 └── icons/     ├── gen_icons.py         # 图标生成脚本     ├── icon-192.png         # 192×192（安卓桌面）     ├── icon-512.png         # 512×512（PWA通用）     ├── apple-touch-icon.png # 180×180（iOS桌面）     └── favicon-32.png       # 32×32（浏览器标签页） ```",
+  "main": "push-notification.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/ios": "^8.3.4"
+  }
+}
