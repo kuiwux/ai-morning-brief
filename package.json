@@ -1,7 +1,7 @@
 {
   "name": "05-pwa",
   "version": "1.0.0",
-  "description": "``` 05-PWA/ ├── index.html              # 主页面（基于v2.0原型 + PWA增强） ├── manifest.json           # PWA 清单文件 ├── sw.js                   # Service Worker（离线缓存 + 推送处理） ├── push-notification.js    # 推送通知前端逻辑 ├── server.py               # 后端服务器（端口8899） ├── README.md               # 本文件 └── icons/     ├── gen_icons.py         # 图标生成脚本     ├── icon-192.png         # 192×192（安卓桌面）     ├── icon-512.png         # 512×512（PWA通用）     ├── apple-touch-icon.png # 180×180（iOS桌面）     └── favicon-32.png       # 32×32（浏览器标签页） ```",
+  "description": "``` 05-PWA/ \u251c\u2500\u2500 index.html              # \u4e3b\u9875\u9762\uff08\u57fa\u4e8ev2.0\u539f\u578b + PWA\u589e\u5f3a\uff09 \u251c\u2500\u2500 manifest.json           # PWA \u6e05\u5355\u6587\u4ef6 \u251c\u2500\u2500 sw.js                   # Service Worker\uff08\u79bb\u7ebf\u7f13\u5b58 + \u63a8\u9001\u5904\u7406\uff09 \u251c\u2500\u2500 push-notification.js    # \u63a8\u9001\u901a\u77e5\u524d\u7aef\u903b\u8f91 \u251c\u2500\u2500 server.py               # \u540e\u7aef\u670d\u52a1\u5668\uff08\u7aef\u53e38899\uff09 \u251c\u2500\u2500 README.md               # \u672c\u6587\u4ef6 \u2514\u2500\u2500 icons/     \u251c\u2500\u2500 gen_icons.py         # \u56fe\u6807\u751f\u6210\u811a\u672c     \u251c\u2500\u2500 icon-192.png         # 192\u00d7192\uff08\u5b89\u5353\u684c\u9762\uff09     \u251c\u2500\u2500 icon-512.png         # 512\u00d7512\uff08PWA\u901a\u7528\uff09     \u251c\u2500\u2500 apple-touch-icon.png # 180\u00d7180\uff08iOS\u684c\u9762\uff09     \u2514\u2500\u2500 favicon-32.png       # 32\u00d732\uff08\u6d4f\u89c8\u5668\u6807\u7b7e\u9875\uff09 ```",
   "main": "push-notification.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,6 +11,9 @@
   "license": "ISC",
   "dependencies": {
     "@capacitor/core": "^8.3.4",
-    "@capacitor/ios": "^8.3.4"
+    "@capacitor/ios": "^8.3.4",
+    "@capacitor/push-notifications": "^8.1.1",
+    "cordova-plugin-purchase": "^13.16.1",
+    "@capacitor/cli": "^8.3.4"
   }
 }
