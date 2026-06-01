@@ -123,7 +123,7 @@ jobs:
             --apiKey "$APPSTORE_CONNECT_KEY_ID" \
             --apiIssuer "$APPSTORE_CONNECT_ISSUER_ID" 2>&1)
           echo "$UPLOAD_OUTPUT"
-          if echo "$UPLOAD_OUTPUT" | grep -q "FAILED\|Error\|error"; then
+          if echo "$UPLOAD_OUTPUT" | grep -qE "FAILED|Error:"; then
             echo "❌ Upload failed!"
             exit 1
           fi
