@@ -72,11 +72,19 @@ jobs:
           cp -r icons www/ 2>/dev/null || true
           cp -r splash www/ 2>/dev/null || true
 
-          # 初始化 iOS 平台（如果还没做）
-          npx cap add ios 2>/dev/null || echo "ios platform already exists"
-
-          # 同步 web 资源到 iOS 原生项目
-          npx cap sync ios
+          # 检查并初始化 iOS 平台
+          echo "=== Capacitor check ==="
+          ls node_modules/.bin/cap && echo "cap binary found" || echo "cap NOT found"
+          ls node_modules/@capacitor/cli && echo "@capacitor/cli found" || echo "@capacitor/cli NOT found"
+          
+          echo "=== Add iOS platform ==="
+          npx @capacitor/cli add ios 2>&1
+          
+          echo "=== Sync ==="
+          npx @capacitor/cli sync ios 2>&1
+          
+          echo "=== ios/ contents ==="
+          ls -la ios/ 2>/dev/null || echo "ios/ not created" 
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
