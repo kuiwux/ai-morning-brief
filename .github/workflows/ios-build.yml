@@ -68,7 +68,22 @@ jobs:
           echo "✅ API Key written to ~/api_key.p8"
 
       - name: Build Capacitor web assets
-        run: npx cap sync ios
+        run: |
+          # 创建 www 目录并复制 web 资源供 Capacitor 使用
+          mkdir -p www
+          cp index.html www/ 2>/dev/null || true
+          cp *.js www/ 2>/dev/null || true
+          cp *.json www/ 2>/dev/null || true
+          cp *.html www/ 2>/dev/null || true
+          cp *.css www/ 2>/dev/null || true
+          cp -r icons www/ 2>/dev/null || true
+          cp -r splash www/ 2>/dev/null || true
+
+          # 初始化 iOS 平台（如果还没做）
+          npx cap add ios 2>/dev/null || echo "ios platform already exists"
+
+          # 同步 web 资源到 iOS 原生项目
+          npx cap sync ios
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
