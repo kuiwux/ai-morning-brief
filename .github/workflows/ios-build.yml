@@ -93,7 +93,8 @@ jobs:
             -exportOptionsPlist "${{ github.workspace }}/ios/ExportOptions.plist" \
             -authenticationKeyPath ~/api_key.p8 \
             -authenticationKeyID "$APPSTORE_CONNECT_KEY_ID" \
-            -authenticationKeyIssuerID "$APPSTORE_CONNECT_ISSUER_ID"
+            -authenticationKeyIssuerID "$APPSTORE_CONNECT_ISSUER_ID" \
+            -allowProvisioningUpdates
 
           echo "✅ Build complete!"
           ls -la "${{ github.workspace }}/build/ipa/"
