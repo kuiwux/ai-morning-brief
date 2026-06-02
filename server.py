@@ -575,20 +575,200 @@ def voice_tts():
 #  资讯 API
 # =====================================================================
 
+# 硬编码降级数据（当 output.json 不可用时使用）
+_FALLBACK_ARTICLES = [
+    {'id': 'fallback_1', 'title': 'OpenAI 宣布完成新一轮融资', 'summary': '估值3000亿美元，由Thrive Capital领投', 'category': '公司动态', 'tags': ['OpenAI', '融资'], 'source_type': 'hn', 'language': 'zh'},
+    {'id': 'fallback_2', 'title': 'DeepSeek 开源最新模型 V4', 'summary': '性能对标 Claude 4，训练成本仅为600万美元', 'category': '技术突破', 'tags': ['DeepSeek', '开源'], 'source_type': 'hn', 'language': 'zh'},
+    {'id': 'fallback_3', 'title': '百度发布文心一言5.0', 'summary': '多模态能力大幅提升，API价格比GPT-4o低60%', 'category': '产品发布', 'tags': ['百度', '多模态'], 'source_type': 'cn', 'language': 'zh'},
+    {'id': 'fallback_4', 'title': 'Google 发布 Gemini 2.5 Pro', 'summary': '代码能力超越GPT-5，首次集成Android端侧推理', 'category': '产品发布', 'tags': ['Google', 'Gemini'], 'source_type': 'hn', 'language': 'zh'},
+    {'id': 'fallback_5', 'title': '字节跳动豆包日均调用突破5000亿Token', 'summary': '成国内最大AI应用平台，API降价50%', 'category': '公司动态', 'tags': ['字节跳动', '豆包'], 'source_type': 'cn', 'language': 'zh'},
+    {'id': 'fallback_6', 'title': 'NVIDIA 发布 B300 GPU 架构', 'summary': '推理性能提升12倍，专为大模型推理优化', 'category': '产品发布', 'tags': ['NVIDIA', 'GPU'], 'source_type': 'hn', 'language': 'zh'},
+    {'id': 'fallback_7', 'title': 'Anthropic CEO 万字长文谈AI安全', 'summary': '提出负责任扩展框架与独立安全委员会制度', 'category': '观点评论', 'tags': ['Anthropic', 'AI安全'], 'source_type': 'hn', 'language': 'zh'},
+    {'id': 'fallback_8', 'title': 'Meta 开源 Llama 4-405B', 'summary': '社区反响两极分化，基准测试争议持续发酵', 'category': '技术突破', 'tags': ['Meta', 'Llama'], 'source_type': 'hn', 'language': 'zh'},
+]
+
+_EN_FALLBACK_ARTICLES = [
+    {'id': 'fallback_en_1', 'title': 'OpenAI Announces New Funding Round', 'summary': 'Valued at $300B, led by Thrive Capital', 'category': '公司动态', 'tags': ['OpenAI', 'Funding'], 'source_type': 'hn', 'language': 'en'},
+    {'id': 'fallback_en_2', 'title': 'DeepSeek Releases Open-Source Model V4', 'summary': 'Performance rivals Claude 4, training cost only $6M', 'category': '技术突破', 'tags': ['DeepSeek', 'Open Source'], 'source_type': 'hn', 'language': 'en'},
+    {'id': 'fallback_en_3', 'title': 'Google Launches Gemini 2.5 Pro', 'summary': 'Coding ability surpasses GPT-5, first on-device Android inference', 'category': '产品发布', 'tags': ['Google', 'Gemini'], 'source_type': 'hn', 'language': 'en'},
+    {'id': 'fallback_en_4', 'title': 'NVIDIA Unveils B300 GPU Architecture', 'summary': '12x inference performance boost, optimized for LLM inference', 'category': '产品发布', 'tags': ['NVIDIA', 'GPU'], 'source_type': 'hn', 'language': 'en'},
+    {'id': 'fallback_en_5', 'title': 'Anthropic CEO on AI Safety', 'summary': 'Proposes responsible scaling framework and independent safety board', 'category': '观点评论', 'tags': ['Anthropic', 'AI Safety'], 'source_type': 'hn', 'language': 'en'},
+    {'id': 'fallback_en_6', 'title': 'Meta Open-Sources Llama 4-405B', 'summary': 'Community reaction polarized, benchmark controversy continues', 'category': '技术突破', 'tags': ['Meta', 'Llama'], 'source_type': 'hn', 'language': 'en'},
+]
+
+
+def _load_articles_from_output(lang: str = 'zh') -> list[dict]:
+    """从管线 output.json 加载文章，支持语言过滤"""
+    output_dir = '/tmp/ai_morning_brief'
+    
+    # 根据语言选择不同的 JSON 文件
+    if lang == 'en':
+        # 尝试读取英文版
+        en_json_path = os.path.join(output_dir, 'output_en.json')
+        if os.path.exists(en_json_path):
+            try:
+                with open(en_json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                articles = data.get('articles', [])
+                if articles:
+                    print(f'[Articles] 从 output_en.json 加载 {len(articles)} 条英文文章')
+                    return articles
+            except (json.JSONDecodeError, IOError) as e:
+                print(f'[Articles] 读取 output_en.json 失败: {e}')
+        
+        # 降级：从中文版中筛选英文源文章，使用 english_title/english_summary
+        json_path = os.path.join(output_dir, 'output.json')
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                all_articles = data.get('articles', [])
+                en_articles = []
+                for a in all_articles:
+                    # 只取有英文字段的文章（海外源）
+                    if a.get('english_title') or a.get('language') == 'en':
+                        en_articles.append({
+                            'id': a.get('id', ''),
+                            'title': a.get('english_title') or a.get('title', ''),
+                            'summary': a.get('english_summary') or a.get('summary', ''),
+                            'category': a.get('category', ''),
+                            'tags': a.get('tags', []),
+                            'source_type': a.get('source_type', ''),
+                            'url': a.get('url', ''),
+                            'source_count': a.get('source_count', 1),
+                            'language': 'en',
+                        })
+                if en_articles:
+                    print(f'[Articles] 从 output.json 筛选 {len(en_articles)} 条英文文章')
+                    return en_articles
+            except (json.JSONDecodeError, IOError) as e:
+                print(f'[Articles] 读取 output.json 失败: {e}')
+        
+        return []
+    
+    # 中文模式（默认）
+    json_path = os.path.join(output_dir, 'output.json')
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            articles = data.get('articles', [])
+            if articles:
+                # 为每篇文章标记语言
+                for a in articles:
+                    if 'language' not in a:
+                        a['language'] = 'zh'
+                print(f'[Articles] 从 output.json 加载 {len(articles)} 条文章')
+                return articles
+        except (json.JSONDecodeError, IOError) as e:
+            print(f'[Articles] 读取 output.json 失败: {e}')
+    
+    return []
+
+
+def _filter_by_topics(articles: list[dict], topics: list[str]) -> list[dict]:
+    """根据用户偏好主题过滤文章"""
+    if not topics:
+        return articles
+    
+    # 主题 → 分类/标签映射
+    topic_keywords = {
+        'AI': ['AI', 'LLM', 'GPT', '大模型', '人工智能', 'DeepSeek', 'OpenAI', 'Anthropic', 'DeepMind', 'Gemini', 'Claude'],
+        '科技': ['AI', 'LLM', 'GPU', '芯片', '算力', 'NVIDIA', '模型', '推理', '训练', '开源'],
+        '产品': ['产品', '发布', '应用', 'Launch', 'Release', 'API', '工具', '平台'],
+        '学术': ['论文', '研究', 'arxiv', '学术', '理论', '方法'],
+    }
+    
+    # 收集用户选择主题对应的关键词
+    user_keywords = set()
+    for topic in topics:
+        keywords = topic_keywords.get(topic, [topic])
+        user_keywords.update(k.lower() for k in keywords)
+    
+    if not user_keywords:
+        return articles
+    
+    filtered = []
+    for article in articles:
+        # 检查分类
+        category = (article.get('category', '') or '').lower()
+        # 检查标签
+        tags = [t.lower() for t in (article.get('tags', []) or [])]
+        # 检查标题
+        title = (article.get('title', '') or '').lower()
+        
+        # 任一匹配即保留
+        if any(kw in category for kw in user_keywords):
+            filtered.append(article)
+        elif any(kw in t for t in tags for kw in user_keywords):
+            filtered.append(article)
+        elif any(kw in title for kw in user_keywords):
+            filtered.append(article)
+    
+    return filtered if filtered else articles  # 如果全部过滤掉了，返回全部
+
+
 @app.route('/api/v2/articles', methods=['GET'])
+@login_required
 def get_articles():
-    """获取今日资讯"""
-    articles_data = [
-        {'title': 'OpenAI 宣布完成新一轮融资', 'summary': '估值3000亿美元，由Thrive Capital领投'},
-        {'title': 'DeepSeek 开源最新模型 V4', 'summary': '性能对标 Claude 4，训练成本仅为600万美元'},
-        {'title': '百度发布文心一言5.0', 'summary': '多模态能力大幅提升，API价格比GPT-4o低60%'},
-        {'title': 'Google 发布 Gemini 2.5 Pro', 'summary': '代码能力超越GPT-5，首次集成Android端侧推理'},
-        {'title': '字节跳动豆包日均调用突破5000亿Token', 'summary': '成国内最大AI应用平台，API降价50%'},
-        {'title': 'NVIDIA 发布 B300 GPU 架构', 'summary': '推理性能提升12倍，专为大模型推理优化'},
-        {'title': 'Anthropic CEO 万字长文谈AI安全', 'summary': '提出负责任扩展框架与独立安全委员会制度'},
-        {'title': 'Meta 开源 Llama 4-405B', 'summary': '社区反响两极分化，基准测试争议持续发酵'}
-    ]
-    return jsonify({'articles': articles_data})
+    """获取今日资讯（需登录）"""
+    lang = request.args.get('lang', 'zh').strip()
+    if lang not in ('zh', 'en'):
+        lang = 'zh'
+    
+    # 读取用户偏好
+    user_topics = []
+    conn = get_db()
+    try:
+        prefs = conn.execute(
+            "SELECT topics FROM user_preferences WHERE user_id = ?",
+            (g.current_user_id,)
+        ).fetchone()
+        if prefs and prefs['topics']:
+            try:
+                user_topics = json.loads(prefs['topics'])
+            except (json.JSONDecodeError, TypeError):
+                user_topics = []
+    except Exception as e:
+        print(f'[Articles] 读取偏好失败: {e}')
+    finally:
+        conn.close()
+    
+    # 加载真实管线数据
+    articles = _load_articles_from_output(lang)
+    
+    # 降级到硬编码假数据
+    if not articles:
+        print(f'[Articles] output.json 不可用，使用降级数据 (lang={lang})')
+        articles = _EN_FALLBACK_ARTICLES if lang == 'en' else _FALLBACK_ARTICLES
+    
+    # 根据用户偏好过滤
+    if user_topics:
+        articles = _filter_by_topics(articles, user_topics)
+    
+    # 也返回 headline 信息
+    headline = {}
+    output_json_path = '/tmp/ai_morning_brief/output.json'
+    if os.path.exists(output_json_path):
+        try:
+            with open(output_json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            hl = data.get('headline', {})
+            if isinstance(hl, dict):
+                headline = {
+                    'title': hl.get('title', ''),
+                    'summary': hl.get('summary', ''),
+                    'eli5': hl.get('eli5', ''),
+                }
+        except Exception:
+            pass
+    
+    return jsonify({
+        'articles': articles,
+        'headline': headline,
+        'total': len(articles),
+        'language': lang,
+    })
 
 
 # =====================================================================
