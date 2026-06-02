@@ -22,7 +22,7 @@ import concurrent.futures
 from flask import Flask, request, jsonify, send_from_directory, g, Response
 from database import init_db, create_demo_account, get_db
 from auth import login_required, hash_password, verify_password, create_token, decode_token, blacklist_token
-from oauth import google_auth_url, google_auth_callback, apple_auth_callback
+from oauth import google_auth_url, google_auth_callback, apple_auth_callback, wechat_auth_url, wechat_auth_callback, alipay_auth_url, alipay_auth_callback
 
 # ===== 配置 =====
 PORT = int(os.environ.get('PORT', 8899))
@@ -274,6 +274,10 @@ def auth_me():
 app.add_url_rule('/api/auth/google/url', 'google_auth_url', google_auth_url, methods=['GET'])
 app.add_url_rule('/api/auth/google/callback', 'google_auth_callback', google_auth_callback, methods=['GET'])
 app.add_url_rule('/api/auth/apple/callback', 'apple_auth_callback', apple_auth_callback, methods=['POST'])
+app.add_url_rule('/api/auth/wechat/url', 'wechat_auth_url', wechat_auth_url, methods=['GET'])
+app.add_url_rule('/api/auth/wechat/callback', 'wechat_auth_callback', wechat_auth_callback, methods=['GET'])
+app.add_url_rule('/api/auth/alipay/url', 'alipay_auth_url', alipay_auth_url, methods=['GET'])
+app.add_url_rule('/api/auth/alipay/callback', 'alipay_auth_callback', alipay_auth_callback, methods=['GET'])
 
 
 # =====================================================================
