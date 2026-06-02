@@ -6,6 +6,7 @@ on:
     paths:
       - 'ios/**'
       - '.github/workflows/ios-build.yml'
+      - 'icons/**'
   workflow_dispatch:
     inputs:
       server_url:
