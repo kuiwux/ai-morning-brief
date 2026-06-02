@@ -7,7 +7,6 @@ pipeline/server.py
 # ==== 环境变量（敏感信息）====
 .env
 pipeline/.env
-deploy/.env.production
 
 # ==== 运行时文件 ====
 run/
