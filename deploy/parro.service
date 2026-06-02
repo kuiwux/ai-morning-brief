@@ -1,0 +1,47 @@
+[Unit]
+Description=Parro (硅谷AI晨报) - Flask Backend & Pipeline Service
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+User=www-data
+Group=www-data
+
+# 项目目录
+WorkingDirectory=/opt/parro
+
+# 环境变量
+EnvironmentFile=/opt/parro/.env
+
+# 环境变量（额外）
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONUNBUFFERED=1
+
+# PID 文件
+PIDFile=/opt/parro/run/flask.pid
+
+# 启动 / 停止 / 重载
+ExecStart=/opt/parro/deploy/start.sh
+ExecStop=/opt/parro/deploy/stop.sh
+ExecReload=/bin/kill -HUP $MAINPID
+
+# 自动重启
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
+
+# 超时
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+# 安全加固（可选）
+# NoNewPrivileges=yes
+# PrivateTmp=yes
+# ProtectSystem=strict
+# ReadWritePaths=/opt/parro/data /opt/parro/logs /opt/parro/run
+# ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target
