@@ -1,0 +1,1013 @@
+"""\nAI Morning Brief - Flask + DeepSeek 对话 API + News API v2\n端口 8898\n"""
+
+import os
+import sys
+import json
+import glob
+import re
+import sqlite3
+import logging
+from datetime import datetime, timedelta
+from functools import wraps
+
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+from openai import OpenAI
+from dotenv import load_dotenv
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+logger = logging.getLogger(__name__)
+
+# ── 加载 .env ──────────────────────────────────────────────────────────────
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+load_dotenv(env_path)
+
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+if not DEEPSEEK_API_KEY:
+    print("❌ 错误：未找到 DEEPSEEK_API_KEY，请检查 .env 文件", file=sys.stderr)
+    sys.exit(1)
+
+# ── Flask 应用 ─────────────────────────────────────────────────────────────
+app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": [
+    "http://localhost:8898",
+    "http://localhost:8899",
+    "http://127.0.0.1:8898",
+    "http://127.0.0.1:8899",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://localhost:8898",
+    "https://127.0.0.1:8898",
+]}})
+
+# ── 挂载 News API v2 Blueprint ──
+try:
+    from news_api import news_bp
+    app.register_blueprint(news_bp)
+    print("📡 News API v2 已挂载")
+except ImportError as e:
+    print(f"⚠️  News API v2 加载失败: {e}")
+
+# ── 挂载 Voice API Blueprint ──
+try:
+    from voice_api import voice_bp
+    app.register_blueprint(voice_bp)
+    print("🎤 Voice API 已挂载")
+except ImportError as e:
+    print(f"⚠️  Voice API 加载失败: {e}")
+
+# ── 挂载 Auth API Blueprint ──
+try:
+    from auth_api import auth_bp, require_auth
+    from user_db import init_auth_db
+    app.register_blueprint(auth_bp)
+    print("🔐 Auth API 已挂载")
+except ImportError as e:
+    print(f"⚠️  Auth API 加载失败: {e}")
+    require_auth = None  # type: ignore
+    init_auth_db = lambda: None  # type: ignore
+
+# ── 挂载 Chat API v2 Blueprint ──
+try:
+    from chat_api import chat_bp
+    app.register_blueprint(chat_bp)
+    print("💬 Chat API v2 已挂载")
+except ImportError as e:
+    print(f"⚠️  Chat API v2 加载失败: {e}")
+
+# ── 挂载 Push API Blueprint ──
+try:
+    from push_api import push_bp
+    app.register_blueprint(push_bp)
+    print("📲 Push API 已挂载")
+except ImportError as e:
+    print(f"⚠️  Push API 加载失败: {e}")
+
+# ── 挂载 Payment API Blueprint ──
+try:
+    from payment_api import payment_bp
+    from payment_db import init_payment_db
+    app.register_blueprint(payment_bp)
+    print("💰 Payment API 已挂载")
+except ImportError as e:
+    print(f"⚠️  Payment API 加载失败: {e}")
+    init_payment_db = lambda: None  # type: ignore
+
+# ── PWA 静态文件路由 ──
+WORKDIR = os.path.dirname(os.path.abspath(__file__))
+
+@app.route("/manifest.json")
+def pwa_manifest():
+    """PWA manifest.json"""
+    manifest = {
+        "name": "AI Morning Brief",
+        "short_name": "AI晨报",
+        "description": "硅谷AI晨报 - 实时AI资讯推送",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#0f172a",
+        "theme_color": "#3b82f6",
+        "icons": [
+            {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png"},
+        ],
+    }
+    return jsonify(manifest)
+
+@app.route("/sw.js")
+def service_worker():
+    """Service Worker（PWA 推送 + 离线缓存）"""
+    sw_js = """\
+// ══════════════════════════════════════════════════════════════════════════
+// AI Morning Brief — Service Worker
+// ══════════════════════════════════════════════════════════════════════════
+
+const CACHE_NAME = 'ai-morning-v2';
+
+// ── Push Event ──────────────────────────────────────────────────────────
+self.addEventListener('push', function(event) {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch (e) {
+    payload = { title: 'AI晨报', body: event.data ? event.data.text() : '有新的AI资讯' };
+  }
+
+  const title = payload.title || 'AI Morning Brief';
+  const options = {
+    body: payload.body || '有新的AI资讯',
+    icon: payload.icon || '/static/icon-192.png',
+    badge: payload.badge || '/static/icon-192.png',
+    tag: payload.tag || 'default',
+    data: {
+      url: (payload.data && payload.data.url) || '/',
+      articleId: (payload.data && payload.data.articleId) || '',
+      pushType: (payload.data && payload.data.pushType) || 'realtime',
+    },
+    requireInteraction: payload.requireInteraction || false,
+    renotify: payload.renotify || false,
+    vibrate: payload.vibrate || [100, 50, 100],
+    timestamp: Date.now(),
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+// ── Notification Click ──────────────────────────────────────────────────
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+
+  const url = event.notification.data.url || '/';
+  const articleId = event.notification.data.articleId || '';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
+      // 如果已有打开的窗口，聚焦并导航
+      for (let client of windowClients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.postMessage({
+            type: 'NOTIFICATION_CLICK',
+            url: url,
+            articleId: articleId,
+          });
+          return client.focus();
+        }
+      }
+      // 否则打开新窗口
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
+  );
+});
+
+// ── Notification Close ──────────────────────────────────────────────────
+self.addEventListener('notificationclose', function(event) {
+  // 可用于统计通知关闭率
+  console.log('[SW] Notification closed:', event.notification.tag);
+});
+
+// ── Install ─────────────────────────────────────────────────────────────
+self.addEventListener('install', function(event) {
+  console.log('[SW] Installed');
+  self.skipWaiting();
+});
+
+// ── Activate ────────────────────────────────────────────────────────────
+self.addEventListener('activate', function(event) {
+  console.log('[SW] Activated');
+  event.waitUntil(
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(key) { return key !== CACHE_NAME; })
+            .map(function(key) { return caches.delete(key); })
+      );
+    })
+  );
+  return self.clients.claim();
+});
+"""
+    from flask import Response
+    return Response(sw_js, mimetype="application/javascript")
+
+@app.route("/static/<path:filename>")
+def static_files(filename):
+    """静态文件服务"""
+    static_dir = os.path.join(WORKDIR, "static")
+    os.makedirs(static_dir, exist_ok=True)
+    return send_from_directory(static_dir, filename)
+
+@app.route("/push-notification.js")
+def push_notification_js():
+    """推送通知前端脚本"""
+    js_path = os.path.join(WORKDIR, "push-notification.js")
+    if os.path.exists(js_path):
+        return send_from_directory(WORKDIR, "push-notification.js", mimetype="application/javascript")
+    return "/* push-notification.js not found */", 404
+
+# ── API 认证 ────────────────────────────────────────────────────────────────
+API_TOKEN = os.environ.get("API_TOKEN", "hermes-morning-brief-2026")
+
+
+def require_token(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get("Authorization", "").replace("Bearer ", "")
+        if token != API_TOKEN:
+            return jsonify({"error": "Unauthorized"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+# ── SQLite 数据库 ────────────────────────────────────────────────────────────
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db")
+
+
+def init_db():
+    """初始化数据库，创建所有表"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    # ── 原有表 ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            article_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_prefs (
+            user_id TEXT NOT NULL,
+            category TEXT NOT NULL,
+            preference TEXT NOT NULL,
+            PRIMARY KEY (user_id, category)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            article_id TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS favorites (
+            user_id TEXT NOT NULL,
+            article_id TEXT NOT NULL,
+            PRIMARY KEY (user_id, article_id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS topic_subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            topic TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, topic)
+        )
+    """)
+
+    # ── v2 新表（资讯 + 推送 + 设备） ──
+    try:
+        from database import init_db as init_v2_db
+        init_v2_db()
+    except ImportError:
+        # 如果 database.py 不可用，手动创建核心表
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS articles (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                title_cn TEXT,
+                summary TEXT,
+                summary_cn TEXT,
+                ai_comment TEXT,
+                eli5 TEXT,
+                category TEXT,
+                tags TEXT,
+                source_type TEXT,
+                source_region TEXT,
+                source_url TEXT,
+                credibility TEXT DEFAULT 'medium',
+                source_count INTEGER DEFAULT 1,
+                published_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_pushed INTEGER DEFAULT 0
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS notification_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                article_id TEXT NOT NULL,
+                push_type TEXT DEFAULT 'realtime',
+                priority TEXT DEFAULT 'normal',
+                payload TEXT,
+                status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                sent_at TIMESTAMP,
+                FOREIGN KEY (article_id) REFERENCES articles(id)
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS device_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
+                token TEXT NOT NULL UNIQUE,
+                platform TEXT DEFAULT 'web',
+                endpoint TEXT,
+                p256dh TEXT,
+                auth TEXT,
+                is_active INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_seen TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_articles_created
+            ON articles(created_at DESC)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_articles_category
+            ON articles(category)
+        """)
+
+    conn.commit()
+    conn.close()
+    print("📦 SQLite 数据库已初始化")
+
+    # 初始化认证表
+    try:
+        init_auth_db()
+        print("🔐 认证数据库表已初始化")
+    except Exception as e:
+        print(f"⚠️  认证数据库初始化失败: {e}")
+
+    # 初始化对话表
+    try:
+        from chat_db import init_chat_db
+        init_chat_db()
+        print("💬 对话数据库表已初始化")
+    except Exception as e:
+        print(f"⚠️  对话数据库初始化失败: {e}")
+
+    # 初始化支付表
+    try:
+        init_payment_db()
+        print("💰 支付数据库表已初始化")
+    except Exception as e:
+        print(f"⚠️  支付数据库初始化失败: {e}")
+
+# ── DeepSeek 客户端 ────────────────────────────────────────────────────────
+client = OpenAI(
+    api_key=DEEPSEEK_API_KEY,
+    base_url="https://api.deepseek.com",
+)
+
+# ── API 端点 ───────────────────────────────────────────────────────────────
+
+
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    """AI 对话接口"""
+    try:
+        data = request.get_json(force=True)
+
+        article_title = data.get("article_title", "")
+        article_summary = data.get("article_summary", "")
+        article_ai_comment = data.get("article_ai_comment", "")
+        message = data.get("message", "")
+        history = data.get("history", [])
+
+        if not message:
+            return jsonify({"error": "message 不能为空"}), 400
+
+        # 构建 system prompt
+        system_prompt = f"""你是一位专业的AI行业分析师，正在和读者讨论一篇AI资讯文章。
+
+文章标题：{article_title}
+文章摘要：{article_summary}
+AI点评：{article_ai_comment}
+
+请根据文章内容回答读者的问题。保持专业、简洁、有深度。如果读者的问题超出文章范围，可以结合你的知识进行扩展讨论。用中文回复。"""
+
+        # 构建消息列表
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # 添加历史对话（最多保留最近 20 轮）
+        for msg in history[-20:]:
+            if msg.get("role") in ("user", "assistant"):
+                messages.append({
+                    "role": msg["role"],
+                    "content": msg.get("content", ""),
+                })
+
+        # 添加当前用户消息
+        messages.append({"role": "user", "content": message})
+
+        # 调用 DeepSeek
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=2000,
+        )
+
+        reply = response.choices[0].message.content
+
+        return jsonify({"reply": reply})
+
+    except Exception as e:
+        print(f"❌ /api/chat 错误: {e}", file=sys.stderr)
+        logger.error(f"/api/chat error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    """健康检查"""
+    return jsonify({"status": "ok"})
+
+
+# ── 对话持久化 API ────────────────────────────────────────────────────────────
+
+
+def _get_db():
+    """获取数据库连接（每次请求新建，确保线程安全）"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+@app.route("/api/chat/save", methods=["POST"])
+@require_token
+def chat_save():
+    """保存对话历史
+    Body: {user_id, article_id, messages: [{role, content}]}
+    """
+    try:
+        data = request.get_json(force=True)
+        user_id = data.get("user_id", "")
+        article_id = data.get("article_id", "")
+        messages = data.get("messages", [])
+
+        if not user_id or not article_id or not messages:
+            return jsonify({"error": "user_id, article_id, messages 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+        for msg in messages:
+            cursor.execute(
+                "INSERT INTO chat_history (user_id, article_id, role, content) VALUES (?, ?, ?, ?)",
+                (user_id, article_id, msg.get("role", "user"), msg.get("content", "")),
+            )
+        conn.commit()
+        conn.close()
+
+        return jsonify({"status": "ok", "saved": len(messages)})
+
+    except Exception as e:
+        print(f"❌ /api/chat/save 错误: {e}", file=sys.stderr)
+        logger.error(f"/api/chat/save error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/chat/history", methods=["GET"])
+@require_token
+def chat_history():
+    """读取对话历史
+    Query: user_id, article_id
+    """
+    try:
+        user_id = request.args.get("user_id", "")
+        article_id = request.args.get("article_id", "")
+
+        if not user_id or not article_id:
+            return jsonify({"error": "user_id 和 article_id 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT role, content, created_at FROM chat_history WHERE user_id=? AND article_id=? ORDER BY id ASC",
+            (user_id, article_id),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        messages = [{"role": row["role"], "content": row["content"], "created_at": row["created_at"]} for row in rows]
+        return jsonify({"messages": messages, "total": len(messages)})
+
+    except Exception as e:
+        print(f"❌ /api/chat/history 错误: {e}", file=sys.stderr)
+        logger.error(f"/api/chat/history error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/prefs", methods=["POST"])
+@require_token
+def prefs_save():
+    """保存用户偏好（UPSERT）
+    Body: {user_id, category, preference}
+    """
+    try:
+        data = request.get_json(force=True)
+        user_id = data.get("user_id", "")
+        category = data.get("category", "")
+        preference = data.get("preference", "")
+
+        if not user_id or not category or not preference:
+            return jsonify({"error": "user_id, category, preference 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO user_prefs (user_id, category, preference) VALUES (?, ?, ?) "
+            "ON CONFLICT(user_id, category) DO UPDATE SET preference=excluded.preference",
+            (user_id, category, preference),
+        )
+        conn.commit()
+        conn.close()
+
+        return jsonify({"status": "ok"})
+
+    except Exception as e:
+        print(f"❌ /api/prefs POST 错误: {e}", file=sys.stderr)
+        logger.error(f"/api/prefs POST error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/prefs", methods=["GET"])
+@require_token
+def prefs_get():
+    """读取用户偏好
+    Query: user_id
+    """
+    try:
+        user_id = request.args.get("user_id", "")
+
+        if not user_id:
+            return jsonify({"error": "user_id 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT category, preference FROM user_prefs WHERE user_id=?",
+            (user_id,),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        prefs = {row["category"]: row["preference"] for row in rows}
+        return jsonify({"user_id": user_id, "preferences": prefs})
+
+    except Exception as e:
+        print(f"❌ /api/prefs GET 错误: {e}", file=sys.stderr)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/comments", methods=["POST"])
+@require_token
+def comments_save():
+    """保存评论
+    Body: {user_id, article_id, content}
+    """
+    try:
+        data = request.get_json(force=True)
+        user_id = data.get("user_id", "")
+        article_id = data.get("article_id", "")
+        content = data.get("content", "")
+
+        if not user_id or not article_id or not content:
+            return jsonify({"error": "user_id, article_id, content 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO comments (user_id, article_id, content) VALUES (?, ?, ?)",
+            (user_id, article_id, content),
+        )
+        conn.commit()
+        conn.close()
+
+        return jsonify({"status": "ok", "id": cursor.lastrowid})
+
+    except Exception as e:
+        print(f"❌ /api/comments POST 错误: {e}", file=sys.stderr)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/comments", methods=["GET"])
+@require_token
+def comments_get():
+    """读取文章评论
+    Query: article_id
+    """
+    try:
+        article_id = request.args.get("article_id", "")
+
+        if not article_id:
+            return jsonify({"error": "article_id 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, user_id, content, created_at FROM comments WHERE article_id=? ORDER BY created_at DESC",
+            (article_id,),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        comments_list = [
+            {
+                "id": row["id"],
+                "user_id": row["user_id"],
+                "content": row["content"],
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ]
+        return jsonify({"article_id": article_id, "comments": comments_list, "total": len(comments_list)})
+
+    except Exception as e:
+        print(f"❌ /api/comments GET 错误: {e}", file=sys.stderr)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/favorites", methods=["POST"])
+@require_token
+def favorites_toggle():
+    """收藏 toggle（如果已收藏则取消，未收藏则添加）
+    Body: {user_id, article_id}
+    """
+    try:
+        data = request.get_json(force=True)
+        user_id = data.get("user_id", "")
+        article_id = data.get("article_id", "")
+
+        if not user_id or not article_id:
+            return jsonify({"error": "user_id 和 article_id 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+
+        # 检查是否已收藏
+        cursor.execute(
+            "SELECT 1 FROM favorites WHERE user_id=? AND article_id=?",
+            (user_id, article_id),
+        )
+        exists = cursor.fetchone()
+
+        if exists:
+            cursor.execute(
+                "DELETE FROM favorites WHERE user_id=? AND article_id=?",
+                (user_id, article_id),
+            )
+            action = "removed"
+        else:
+            cursor.execute(
+                "INSERT INTO favorites (user_id, article_id) VALUES (?, ?)",
+                (user_id, article_id),
+            )
+            action = "added"
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({"status": "ok", "action": action})
+
+    except Exception as e:
+        print(f"❌ /api/favorites POST 错误: {e}", file=sys.stderr)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/favorites", methods=["GET"])
+@require_token
+def favorites_get():
+    """读取用户收藏列表
+    Query: user_id
+    """
+    try:
+        user_id = request.args.get("user_id", "")
+
+        if not user_id:
+            return jsonify({"error": "user_id 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT article_id FROM favorites WHERE user_id=?",
+            (user_id,),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        article_ids = [row["article_id"] for row in rows]
+        return jsonify({"user_id": user_id, "favorites": article_ids, "total": len(article_ids)})
+
+    except Exception as e:
+        print(f"❌ /api/favorites GET 错误: {e}", file=sys.stderr)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+# ── 话题订阅 API ────────────────────────────────────────────────────────────
+
+
+@app.route("/api/subscribe", methods=["POST"])
+@require_token
+def subscribe():
+    """订阅话题
+    Body: {user_id, topic}
+    """
+    try:
+        data = request.get_json(force=True)
+        user_id = data.get("user_id", "")
+        topic = data.get("topic", "")
+
+        if not user_id or not topic:
+            return jsonify({"error": "user_id 和 topic 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR IGNORE INTO topic_subscriptions (user_id, topic) VALUES (?, ?)",
+            (user_id, topic),
+        )
+        conn.commit()
+
+        if cursor.rowcount > 0:
+            logger.info(f"订阅成功: user_id={user_id}, topic={topic}")
+            conn.close()
+            return jsonify({"status": "ok", "message": f"已订阅「{topic}」"})
+        else:
+            conn.close()
+            return jsonify({"status": "ok", "message": f"已订阅「{topic}」（重复订阅）"})
+
+    except Exception as e:
+        print(f"❌ /api/subscribe 错误: {e}", file=sys.stderr)
+        logger.error(f"/api/subscribe error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/subscriptions", methods=["GET"])
+@require_token
+def subscriptions_get():
+    """读取用户订阅列表
+    Query: user_id
+    """
+    try:
+        user_id = request.args.get("user_id", "")
+
+        if not user_id:
+            return jsonify({"error": "user_id 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT topic, created_at FROM topic_subscriptions WHERE user_id=? ORDER BY created_at DESC",
+            (user_id,),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        topics = [{"topic": row["topic"], "created_at": row["created_at"]} for row in rows]
+        return jsonify({"user_id": user_id, "subscriptions": topics, "total": len(topics)})
+
+    except Exception as e:
+        print(f"❌ /api/subscriptions GET 错误: {e}", file=sys.stderr)
+        logger.error(f"/api/subscriptions GET error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/unsubscribe", methods=["POST"])
+@require_token
+def unsubscribe():
+    """取消订阅话题
+    Body: {user_id, topic}
+    """
+    try:
+        data = request.get_json(force=True)
+        user_id = data.get("user_id", "")
+        topic = data.get("topic", "")
+
+        if not user_id or not topic:
+            return jsonify({"error": "user_id 和 topic 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM topic_subscriptions WHERE user_id=? AND topic=?",
+            (user_id, topic),
+        )
+        conn.commit()
+
+        if cursor.rowcount > 0:
+            logger.info(f"取消订阅: user_id={user_id}, topic={topic}")
+            conn.close()
+            return jsonify({"status": "ok", "message": f"已取消订阅「{topic}」"})
+        else:
+            conn.close()
+            return jsonify({"status": "ok", "message": f"未找到订阅「{topic}」"})
+
+    except Exception as e:
+        print(f"❌ /api/unsubscribe 错误: {e}", file=sys.stderr)
+        logger.error(f"/api/unsubscribe error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+# ── 历史数据 API ───────────────────────────────────────────────────────────
+
+# WORKDIR already defined above
+
+
+@app.route("/api/history", methods=["GET"])
+@require_token
+def history():
+    """
+    返回最近 N 天的历史文章，支持播客模式加载多日数据。
+
+    Query params:
+        days (int): 返回最近 N 天的数据，默认 7
+
+    扫描 WORKDIR 下 output_YYYY-MM-DD.json 文件，
+    按日期倒序排列，每个文件的 articles 数组加上 date 字段后合并返回。
+
+    返回格式:
+    {
+      "articles": [
+        {
+          "date": "2026-05-28",
+          "title": "...",
+          "category": "...",
+          ...
+        }
+      ]
+    }
+    """
+    try:
+        days = request.args.get("days", 7, type=int)
+        days = max(1, min(days, 90))  # 限制范围 1-90
+
+        # 扫描日期化 JSON 文件
+        pattern = os.path.join(WORKDIR, "output_*.json")
+        json_files = glob.glob(pattern)
+
+        if not json_files:
+            return jsonify({"articles": [], "message": "暂无历史数据"})
+
+        # 从文件名中提取日期并排序（倒序：最新的在前）
+        dated_files = []
+        for fpath in json_files:
+            basename = os.path.basename(fpath)
+            match = re.match(r"output_(\d{4}-\d{2}-\d{2})\.json", basename)
+            if match:
+                dated_files.append((match.group(1), fpath))
+
+        dated_files.sort(key=lambda x: x[0], reverse=True)
+
+        # 取最近 N 天
+        dated_files = dated_files[:days]
+
+        all_articles = []
+        for date_str, fpath in dated_files:
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                # 提取 articles 数组，每条加上 date 字段
+                for article in data.get("articles", []):
+                    article_with_date = dict(article)
+                    article_with_date["date"] = date_str
+                    all_articles.append(article_with_date)
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"⚠️ 读取 {fpath} 失败: {e}", file=sys.stderr)
+                continue
+
+        return jsonify({
+            "articles": all_articles,
+            "total": len(all_articles),
+            "days_loaded": len(dated_files),
+        })
+
+    except Exception as e:
+        print(f"❌ /api/history 错误: {e}", file=sys.stderr)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+# ── 数据删除 API ────────────────────────────────────────────────────────────
+
+
+@app.route("/api/account", methods=["DELETE"])
+@require_token
+def account_delete():
+    """一键删除用户所有数据
+    Body: {user_id}
+    """
+    try:
+        data = request.get_json(force=True)
+        user_id = data.get("user_id", "")
+
+        if not user_id:
+            return jsonify({"error": "user_id 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+
+        tables = ["chat_history", "comments", "user_prefs", "favorites"]
+        deleted = {}
+        for table in tables:
+            cursor.execute(f"DELETE FROM {table} WHERE user_id=?", (user_id,))
+            deleted[table] = cursor.rowcount
+
+        conn.commit()
+        conn.close()
+
+        logger.info(f"Account deleted for user_id={user_id}: {deleted}")
+        return jsonify({"status": "ok", "message": "用户数据已全部删除", "deleted": deleted})
+
+    except Exception as e:
+        print(f"❌ /api/account DELETE 错误: {e}", file=sys.stderr)
+        logger.error(f"/api/account DELETE error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/chat/history", methods=["DELETE"])
+@require_token
+def chat_history_delete():
+    """删除对话历史
+    Body: {user_id, article_id}  # article_id 可选，不传则删全部
+    """
+    try:
+        data = request.get_json(force=True)
+        user_id = data.get("user_id", "")
+
+        if not user_id:
+            return jsonify({"error": "user_id 不能为空"}), 400
+
+        conn = _get_db()
+        cursor = conn.cursor()
+
+        article_id = data.get("article_id", "")
+        if article_id:
+            cursor.execute(
+                "DELETE FROM chat_history WHERE user_id=? AND article_id=?",
+                (user_id, article_id),
+            )
+        else:
+            cursor.execute(
+                "DELETE FROM chat_history WHERE user_id=?",
+                (user_id,),
+            )
+
+        deleted_count = cursor.rowcount
+        conn.commit()
+        conn.close()
+
+        logger.info(f"Chat history deleted: user_id={user_id}, article_id={article_id or 'ALL'}, count={deleted_count}")
+        return jsonify({"status": "ok", "deleted": deleted_count})
+
+    except Exception as e:
+        print(f"❌ /api/chat/history DELETE 错误: {e}", file=sys.stderr)
+        logger.error(f"/api/chat/history DELETE error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+# ── 安全响应头 ─────────────────────────────────────────────────────────────
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    return response
+
+
+# ── 启动 ───────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    init_db()
+    print("🚀 Server running on http://localhost:8898")
+    app.run(host="0.0.0.0", port=8898, debug=False)

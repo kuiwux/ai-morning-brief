@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>硅谷AI晨报 - 封面模板</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* 封面容器：900x383，公众号封面标准比例 */
+  .cover {
+    width: 900px;
+    height: 383px;
+    background: linear-gradient(135deg, #0a0e27 0%, #0d1b3e 30%, #0f2247 60%, #0a1628 100%);
+    position: relative;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    color: #ffffff;
+  }
+
+  /* === 背景装饰 === */
+
+  /* 网格线 */
+  .grid-bg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image:
+      linear-gradient(rgba(0, 180, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 180, 255, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+  }
+
+  /* 光晕 - 左上 */
+  .glow-1 {
+    position: absolute;
+    top: -80px;
+    left: -60px;
+    width: 360px;
+    height: 360px;
+    background: radial-gradient(circle, rgba(0, 150, 255, 0.18) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+  }
+
+  /* 光晕 - 右下 */
+  .glow-2 {
+    position: absolute;
+    bottom: -100px;
+    right: -40px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(100, 50, 255, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+  }
+
+  /* 装饰斜线 */
+  .accent-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #00d4ff, #7b61ff, #ff6ec7);
+    z-index: 2;
+  }
+
+  /* 右侧电路板风格装饰 */
+  .circuit {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    opacity: 0.12;
+  }
+  .circuit svg {
+    width: 200px;
+    height: 280px;
+  }
+
+  /* === 主内容区 === */
+  .content {
+    position: relative;
+    z-index: 3;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 60px;
+  }
+
+  /* 日期 */
+  .date {
+    font-size: 16px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+  }
+
+  /* 主标题 */
+  .title {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    background: linear-gradient(90deg, #00d4ff 0%, #7b61ff 50%, #ff6ec7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  /* 分隔线 */
+  .divider {
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg, #00d4ff, #7b61ff);
+    margin-bottom: 16px;
+    border-radius: 1px;
+  }
+
+  /* 副标题 */
+  .subtitle {
+    font-size: 18px;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 2px;
+  }
+
+  /* 标签行 */
+  .tags {
+    position: absolute;
+    bottom: 32px;
+    left: 60px;
+    z-index: 3;
+    display: flex;
+    gap: 12px;
+  }
+  .tag {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 4px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    letter-spacing: 1px;
+  }
+
+  /* 底部渐变条 */
+  .bottom-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.4), rgba(123, 97, 255, 0.4), transparent);
+    z-index: 2;
+  }
+</style>
+</head>
+<body>
+  <!--
+    ============================================
+    使用方法：
+    1. 在浏览器中打开此 HTML 文件
+    2. 使用浏览器开发者工具截图（900x383 区域）
+    3. 每天只需修改 .date 元素中的日期即可
+    ============================================
+    日期格式示例：
+      2026年5月28日 / 星期四
+    ============================================
+  -->
+  <div class="cover">
+    <!-- 背景层 -->
+    <div class="grid-bg"></div>
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+    <div class="accent-line"></div>
+    <div class="bottom-bar"></div>
+
+    <!-- 电路装饰 -->
+    <div class="circuit">
+      <svg viewBox="0 0 200 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M170 10 L170 40 L140 40 L140 70 L170 70 L170 100" stroke="white" stroke-width="1.5"/>
+        <circle cx="170" cy="100" r="3" fill="white"/>
+        <path d="M140 40 L100 40 L100 100 L70 100 L70 130" stroke="white" stroke-width="1.5"/>
+        <circle cx="70" cy="130" r="3" fill="white"/>
+        <path d="M100 70 L100 130 L130 130" stroke="white" stroke-width="1.5"/>
+        <circle cx="130" cy="130" r="3" fill="white"/>
+        <path d="M130 130 L130 170 L100 170 L100 200" stroke="white" stroke-width="1.5"/>
+        <circle cx="100" cy="200" r="3" fill="white"/>
+        <path d="M70 130 L70 170 L40 170 L40 200 L40 230" stroke="white" stroke-width="1.5"/>
+        <circle cx="40" cy="230" r="3" fill="white"/>
+        <path d="M100 200 L100 230 L70 230 L70 260" stroke="white" stroke-width="1.5"/>
+        <circle cx="70" cy="260" r="3" fill="white"/>
+      </svg>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="content">
+      <div class="date">2026年5月28日 / 星期四</div>
+      <div class="title">硅谷AI晨报</div>
+      <div class="divider"></div>
+      <div class="subtitle">每天3分钟，跟上硅谷AI</div>
+    </div>
+
+    <!-- 底部标签 -->
+    <div class="tags">
+      <span class="tag">AI</span>
+      <span class="tag">科技</span>
+      <span class="tag">硅谷</span>
+      <span class="tag">晨报</span>
+    </div>
+  </div>
+</body>
+</html>
