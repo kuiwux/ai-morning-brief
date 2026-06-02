@@ -19,6 +19,7 @@ import sys
 from flask import Flask, request, jsonify, send_from_directory, g
 from database import init_db, create_demo_account, get_db
 from auth import login_required, hash_password, verify_password, create_token, decode_token, blacklist_token
+from oauth import google_auth_url, google_auth_callback, apple_auth_callback
 
 # ===== 配置 =====
 PORT = int(os.environ.get('PORT', 8899))
@@ -253,6 +254,12 @@ def auth_me():
         }), 200
     finally:
         conn.close()
+
+
+# OAuth routes — registered via add_url_rule for clean namespacing
+app.add_url_rule('/api/auth/google/url', 'google_auth_url', google_auth_url, methods=['GET'])
+app.add_url_rule('/api/auth/google/callback', 'google_auth_callback', google_auth_callback, methods=['GET'])
+app.add_url_rule('/api/auth/apple/callback', 'apple_auth_callback', apple_auth_callback, methods=['POST'])
 
 
 # =====================================================================
@@ -922,6 +929,9 @@ def main():
     print(f"     POST /api/auth/login          用户登录")
     print(f"     POST /api/auth/logout         用户登出")
     print(f"     GET  /api/auth/me             当前用户信息")
+    print(f"     GET  /api/auth/google/url     Google OAuth 授权URL")
+    print(f"     GET  /api/auth/google/callback Google OAuth 回调")
+    print(f"     POST /api/auth/apple/callback Apple Sign-In 回调")
     print(f"     GET  /api/user/preferences    获取偏好设置")
     print(f"     PUT  /api/user/preferences    更新偏好设置")
     print(f"     GET  /api/vapid-public-key    获取推送公钥")

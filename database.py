@@ -32,7 +32,12 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL,
+            email TEXT,
+            password_hash TEXT,
+            name TEXT,
+            avatar_url TEXT,
+            oauth_provider TEXT,
+            oauth_id TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             is_demo INTEGER DEFAULT 0

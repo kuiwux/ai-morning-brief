@@ -34,8 +34,8 @@ def verify_password(password: str, password_hash: str) -> bool:
     )
 
 
-def create_token(user_id: int, username: str) -> str:
-    """生成 JWT Token"""
+def create_token(user_id: int, username: str, name: str = None) -> str:
+    """Generate JWT token, optionally including display name"""
     now = int(time.time())
     payload = {
         'sub': str(user_id),
@@ -44,6 +44,8 @@ def create_token(user_id: int, username: str) -> str:
         'exp': now + TOKEN_EXPIRE_HOURS * 3600,
         'jti': f'{user_id}-{now}-{os.urandom(8).hex()}'
     }
+    if name:
+        payload['name'] = name
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
