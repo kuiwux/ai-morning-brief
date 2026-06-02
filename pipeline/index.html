@@ -1,0 +1,3194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>硅谷AI晨报 · 交互式阅读</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #faf7f2;
+    --card-bg: #fffdf8;
+    --text: #3a2f28;
+    --text-secondary: #6b5d4f;
+    --text-muted: #a09080;
+    --border: #e0d0b8;
+    --border-light: #e8dcc8;
+    --accent: #c4a06a;
+    --shadow: rgba(120,80,40,0.06);
+    --cat-company: #2980b9;
+    --cat-tech: #8e44ad;
+    --cat-product: #27ae60;
+    --cat-opinion: #e67e22;
+    --cat-academic: #7f8c8d;
+    --ai-border: #5b8c5a;
+    --ai-bg: #f0f7f0;
+  }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(210,180,140,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 90%, rgba(180,140,100,0.08) 0%, transparent 50%);
+    font-family: 'Noto Serif SC', 'SimSun', 'STSong', serif;
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.8;
+    position: relative;
+  }
+
+  .paper-texture {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,119,90,0.02) 2px, rgba(139,119,90,0.02) 4px);
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 32px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── Header ─── */
+  .header {
+    text-align: center;
+    padding: 40px 24px 32px;
+    border-bottom: 3px double var(--accent);
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .header .kicker {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .header h1 {
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #4a3728;
+    line-height: 1.3;
+  }
+  .header h1 span {
+    display: block;
+    font-size: 15px;
+    font-weight: 400;
+    color: #8b7355;
+    letter-spacing: 3px;
+    margin-top: 4px;
+  }
+  .header .dateline {
+    margin-top: 14px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  /* ─── Headline ─── */
+  .headline-card {
+    background: linear-gradient(135deg, #fffaf3 0%, #fef5ea 100%);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px 26px;
+    margin-bottom: 28px;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+  .headline-card .headline-tag {
+    display: inline-block;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #fff;
+    background: #c0392b;
+    padding: 3px 10px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+  }
+  .headline-card p {
+    font-size: 16px;
+    color: #4a3a2a;
+    line-height: 1.9;
+  }
+
+  /* ─── Category Tabs ─── */
+  .tabs-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .tab-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 16px;
+    border: 1.5px solid var(--border);
+    background: #fdfaf5;
+    color: var(--text-secondary);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .tab-btn:hover {
+    background: #f5ede0;
+    border-color: var(--accent);
+    color: #4a3728;
+  }
+  .tab-btn.active {
+    background: #4a3728;
+    color: #fff;
+    border-color: #4a3728;
+  }
+
+  /* ─── Floating Preference Sidebar ─── */
+  .pref-bar {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 10px;
+    background: #fdfaf5;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(120,80,40,0.1);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .pref-bar .pref-label {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 2px;
+  }
+  .pref-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .pref-cat {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .pref-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border: 1px solid var(--border-light);
+    background: #fff;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-muted);
+  }
+  .pref-btn:hover { border-color: var(--accent); color: var(--text); }
+  .pref-btn.liked { background: #e8f5e9; border-color: #66bb6a; color: #2e7d32; }
+  .pref-btn.disliked { background: #fbe9e7; border-color: #ef5350; color: #c62828; }
+
+  /* ─── Article Card Action Buttons ─── */
+  .article-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    justify-content: flex-end;
+  }
+  .action-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border: 1px solid var(--border-light);
+    background: #fff;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-muted);
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--text); }
+  .action-btn.liked { background: #e8f5e9; border-color: #66bb6a; color: #2e7d32; }
+  .action-btn.disliked { background: #fbe9e7; border-color: #ef5350; color: #c62828; }
+
+  /* ─── Stats Bar ─── */
+  .stats-bar {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .stats-bar .stats-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ─── Global Voice Play-All Button ─── */
+  .global-voice-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 16px;
+    border: 1.5px solid var(--accent);
+    background: linear-gradient(135deg, #fffaf3, #fef5ea);
+    color: #8b6914;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .global-voice-btn:hover {
+    background: #f5ede0;
+    border-color: #8b6914;
+    color: #4a3728;
+  }
+  .global-voice-btn.playing {
+    background: #c0392b;
+    color: #fff;
+    border-color: #c0392b;
+    animation: voice-pulse 0.8s ease-in-out infinite;
+  }
+
+  /* ─── Per-Article Voice Button ─── */
+  .card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .card-title-row .card-title {
+    flex: 1;
+    margin-bottom: 0;
+  }
+  .voice-btn {
+    font-size: 16px;
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    line-height: 1;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+  }
+  .voice-btn:hover {
+    color: var(--accent);
+    background: rgba(196,160,106,0.12);
+    border-color: var(--border-light);
+  }
+  .voice-btn.playing {
+    animation: voice-pulse 0.8s ease-in-out infinite;
+    color: #c0392b;
+    background: rgba(192,57,43,0.08);
+    border-color: rgba(192,57,43,0.2);
+  }
+
+  @keyframes voice-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+  }
+
+  /* ─── Article Card ─── */
+  .article-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 6px var(--shadow);
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+    position: relative;
+  }
+  .article-card:hover {
+    transform: translateX(3px);
+    box-shadow: 0 3px 16px rgba(120,80,40,0.12);
+  }
+  .article-card.expanded {
+    border-color: var(--accent);
+    box-shadow: 0 3px 18px rgba(120,80,40,0.12);
+  }
+
+  /* ─── Card Header (collapsed) ─── */
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .card-expand-icon {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  .article-card.expanded .card-expand-icon {
+    transform: rotate(90deg);
+  }
+  .card-main { flex: 1; min-width: 0; }
+  .card-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #4a3728;
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .card-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  /* ─── Category Tags ─── */
+  .cat-tag {
+    display: inline-block;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 3px;
+    color: #fff;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .cat-公司动态 { background: var(--cat-company); }
+  .cat-技术突破 { background: var(--cat-tech); }
+  .cat-产品发布 { background: var(--cat-product); }
+  .cat-观点评论 { background: var(--cat-opinion); }
+  .cat-学术前沿 { background: var(--cat-academic); }
+
+  .card-author {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .card-link a {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    color: #8b6914;
+    text-decoration: none;
+    border-bottom: 1px dashed var(--accent);
+    padding-bottom: 1px;
+    transition: color 0.2s;
+  }
+  .card-link a:hover { color: #b8860b; border-bottom-style: solid; }
+
+  /* ─── AI Comment ─── */
+  .ai-comment {
+    font-size: 14px;
+    color: #3a5a3a;
+    border-left: 3px solid var(--ai-border);
+    padding: 6px 12px;
+    margin-top: 8px;
+    background: var(--ai-bg);
+    border-radius: 0 4px 4px 0;
+    font-style: italic;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .ai-comment .ai-icon {
+    flex-shrink: 0;
+    font-size: 15px;
+  }
+  .ai-comment .ai-text {
+    flex: 1;
+  }
+
+  /* ─── Expanded Content ─── */
+  .card-expanded-content {
+    max-height: 0;
+    overflow: hidden;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 1px dashed transparent;
+    transition: max-height 0.35s ease, margin-top 0.35s ease, padding-top 0.35s ease, border-color 0.35s ease;
+  }
+  .article-card.expanded .card-expanded-content {
+    max-height: 3000px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top-color: var(--border-light);
+  }
+  .card-summary {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.9;
+    margin-bottom: 16px;
+    text-indent: 2em;
+  }
+
+  /* ─── Original Comments ─── */
+  .orig-comments-section {
+    margin-bottom: 16px;
+  }
+  .orig-comments-section h4 {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4a3728;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .orig-comment {
+    background: #f8f3ea;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+  }
+  .orig-comment .oc-user {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8b6914;
+    margin-bottom: 4px;
+  }
+  .orig-comment .oc-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* ─── User Comment Input ─── */
+  .local-comments-section {
+    margin-top: 14px;
+  }
+  .local-comments-section h4 {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4a3728;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .comment-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .comment-input-row input {
+    flex: 1;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .comment-input-row input:focus {
+    border-color: var(--accent);
+  }
+  .comment-input-row button {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    background: #4a3728;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .comment-input-row button:hover {
+    background: #5c3d2e;
+  }
+  .local-comment {
+    background: #faf5ee;
+    border-radius: 6px;
+    padding: 8px 14px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .local-comment .lc-user {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8b6914;
+    flex-shrink: 0;
+  }
+  .local-comment .lc-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    flex: 1;
+  }
+  .local-comment .lc-delete {
+    font-size: 11px;
+    color: #ccc;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 2px;
+    transition: color 0.2s;
+  }
+  .local-comment .lc-delete:hover { color: #c0392b; }
+
+  /* ─── HN score ─── */
+  .card-score {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    color: #c0392b;
+    font-weight: 600;
+  }
+  .card-score span { color: #8b7355; margin-left: 8px; }
+
+  /* ─── Commentary (Editor's Note) ─── */
+  .commentary {
+    background: linear-gradient(135deg, #fdf6ec 0%, #faeed8 100%);
+    border: 2px solid #d4b896;
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-top: 36px;
+    position: relative;
+  }
+  .commentary::before {
+    content: '\201C';
+    position: absolute;
+    top: -18px;
+    left: 20px;
+    font-size: 60px;
+    color: var(--accent);
+    font-family: Georgia, serif;
+    line-height: 1;
+  }
+  .commentary .label {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #8b6914;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .commentary p {
+    font-size: 16px;
+    color: #4a3728;
+    line-height: 2;
+    text-indent: 2em;
+  }
+
+  /* ─── Footer ─── */
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 2px double #d4b896;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    color: #b0a090;
+    letter-spacing: 1px;
+  }
+
+  /* ─── Loading / Error ─── */
+  .loading-state, .error-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .loading-state .spinner {
+    display: inline-block;
+    width: 32px; height: 32px;
+    border: 3px solid var(--border-light);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 640px) {
+    .container { padding: 16px 14px 80px; }
+    .header h1 { font-size: 26px; }
+    .header { padding: 28px 12px 22px; }
+    .tabs-bar { gap: 6px; }
+    .tab-btn { font-size: 12px; padding: 5px 12px; }
+    .pref-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      top: auto;
+      transform: none;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      border-radius: 12px 12px 0 0;
+      padding: 8px 10px;
+      gap: 6px;
+      z-index: 100;
+    }
+    .pref-bar .pref-label { display: none; }
+    .pref-item { flex-direction: column; min-width: 50px; flex-shrink: 0; gap: 2px; }
+    .pref-cat { font-size: 10px; }
+    .pref-btn { font-size: 10px; padding: 2px 8px; }
+    .article-card { padding: 16px; }
+    .card-title { font-size: 15px; }
+    .commentary { padding: 18px 16px; }
+    .comment-input-row { flex-direction: column; }
+  }
+
+  /* ─── Feedback Floating Button ─── */
+  .feedback-fab {
+    position: fixed;
+    right: 20px;
+    bottom: 30px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #f0a050 0%, #e08840 100%);
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 200;
+    box-shadow: 0 4px 16px rgba(200, 120, 40, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    line-height: 1;
+  }
+  .feedback-fab:hover {
+    transform: scale(1.12);
+    box-shadow: 0 6px 22px rgba(200, 120, 40, 0.5);
+  }
+
+  /* ─── Feedback Modal ─── */
+  .feedback-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .feedback-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .feedback-modal {
+    background: #fffdf8;
+    border-radius: 12px;
+    padding: 28px 24px 20px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    position: relative;
+    border: 1px solid var(--border-light);
+  }
+  .feedback-modal h3 {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 18px;
+    color: #4a3728;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .feedback-modal .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    font-size: 22px;
+    color: #b0a090;
+    cursor: pointer;
+    background: none;
+    border: none;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .feedback-modal .close-btn:hover { color: #4a3728; }
+  .feedback-field {
+    margin-bottom: 14px;
+  }
+  .feedback-field label {
+    display: block;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .feedback-field select,
+  .feedback-field textarea {
+    width: 100%;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+  .feedback-field select:focus,
+  .feedback-field textarea:focus { border-color: var(--accent); }
+  .feedback-field textarea { min-height: 100px; }
+  .feedback-submit {
+    width: 100%;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 10px 0;
+    background: linear-gradient(135deg, #f0a050, #e08840);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+  }
+  .feedback-submit:hover { opacity: 0.9; }
+  .feedback-submit:disabled { opacity: 0.6; cursor: default; }
+
+  /* ─── Success Toast ─── */
+  .feedback-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #4a3728;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 14px;
+    z-index: 400;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+  .feedback-toast.show {
+    opacity: 1;
+  }
+
+  @media (max-width: 640px) {
+    .feedback-fab { bottom: 70px; }
+  }
+
+  /* ─── Chat Discussion Panel ─── */
+  .chat-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 350;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .chat-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .chat-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: 400px;
+    height: 100vh;
+    background: #fffdf8;
+    z-index: 351;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+    border-left: 1px solid var(--border-light);
+  }
+  .chat-panel.active {
+    transform: translateX(0);
+  }
+  .chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-light);
+    background: linear-gradient(135deg, #fffaf3, #fef5ea);
+    flex-shrink: 0;
+  }
+  .chat-header .chat-title {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #4a3728;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 12px;
+  }
+  .chat-header .chat-close {
+    font-size: 22px;
+    color: #b0a090;
+    cursor: pointer;
+    background: none;
+    border: none;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+  .chat-header .chat-close:hover { color: #4a3728; }
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: #faf7f2;
+  }
+  .chat-msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+    animation: chat-msg-in 0.3s ease-out;
+  }
+  @keyframes chat-msg-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .chat-msg.user {
+    align-self: flex-end;
+    align-items: flex-end;
+  }
+  .chat-msg.ai {
+    align-self: flex-start;
+    align-items: flex-start;
+  }
+  .chat-msg .msg-bubble {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 10px 14px;
+    border-radius: 12px;
+    word-break: break-word;
+  }
+  .chat-msg.user .msg-bubble {
+    background: #4a3728;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .chat-msg.ai .msg-bubble {
+    background: #f0f7f0;
+    color: #3a5a3a;
+    border: 1px solid var(--ai-border);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-msg .msg-time {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+  .chat-thinking {
+    align-self: flex-start;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chat-thinking .thinking-dots {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+  .chat-thinking .thinking-dots span {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: think-bounce 1.4s ease-in-out infinite;
+  }
+  .chat-thinking .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .chat-thinking .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes think-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
+    40% { transform: translateY(-6px); opacity: 1; }
+  }
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border-light);
+    background: #fffdf8;
+    flex-shrink: 0;
+  }
+  .chat-input-row input {
+    flex: 1;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: #fff;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .chat-input-row input:focus {
+    border-color: var(--accent);
+  }
+  .chat-input-row .chat-send-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 18px;
+    background: #4a3728;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .chat-input-row .chat-send-btn:hover {
+    background: #5c3d2e;
+  }
+  .chat-input-row .chat-send-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+  .chat-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 14px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 20px;
+  }
+
+  /* ─── Discuss Button ─── */
+  .discuss-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border: 1.5px solid var(--ai-border);
+    background: var(--ai-bg);
+    color: #3a5a3a;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .discuss-btn:hover {
+    background: #d8ecd8;
+    border-color: #4a7a4a;
+    color: #2a4a2a;
+  }
+  .discuss-btn-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 14px;
+  }
+
+  @media (max-width: 640px) {
+    .chat-panel {
+      width: 100vw;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════
+     🆕 改动1: 讨论/评论 Tab 切换
+     ═══════════════════════════════════════════════ */
+  .card-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border-light);
+    margin-bottom: 14px;
+    gap: 0;
+  }
+  .card-tab-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    flex: 1;
+    text-align: center;
+  }
+  .card-tab-btn:hover {
+    color: var(--text);
+    background: rgba(196,160,106,0.06);
+  }
+  .card-tab-btn.active {
+    color: #4a3728;
+    border-bottom-color: var(--accent);
+  }
+  .card-tab-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+  }
+  .card-tab-content.active {
+    max-height: 3000px;
+    opacity: 1;
+  }
+
+  /* Inline AI Chat in expanded card */
+  .inline-chat-messages {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .inline-chat-msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 90%;
+  }
+  .inline-chat-msg.user {
+    align-self: flex-end;
+    align-items: flex-end;
+  }
+  .inline-chat-msg.ai {
+    align-self: flex-start;
+    align-items: flex-start;
+  }
+  .inline-chat-msg .msg-bubble {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 8px 12px;
+    border-radius: 10px;
+    word-break: break-word;
+  }
+  .inline-chat-msg.user .msg-bubble {
+    background: #4a3728;
+    color: #fff;
+    border-bottom-right-radius: 3px;
+  }
+  .inline-chat-msg.ai .msg-bubble {
+    background: #f0f7f0;
+    color: #3a5a3a;
+    border: 1px solid var(--ai-border);
+    border-bottom-left-radius: 3px;
+  }
+  .inline-chat-msg .msg-time {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    padding: 0 2px;
+  }
+  .inline-chat-thinking {
+    align-self: flex-start;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+  }
+  .inline-chat-thinking .thinking-dots {
+    display: flex;
+    gap: 3px;
+  }
+  .inline-chat-thinking .thinking-dots span {
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: think-bounce 1.4s ease-in-out infinite;
+  }
+  .inline-chat-thinking .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .inline-chat-thinking .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  /* ═══════════════════════════════════════════════
+     🆕 改动2: 收藏/转发/喜欢按钮（卡片底部操作栏）
+     ═══════════════════════════════════════════════ */
+  .card-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-light);
+    flex-wrap: wrap;
+  }
+  .card-action-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .card-action-btn:hover {
+    color: var(--text);
+    background: rgba(196,160,106,0.1);
+    border-color: var(--border-light);
+  }
+  .card-action-btn.liked {
+    color: #e74c3c;
+  }
+  .card-action-btn.liked:hover {
+    color: #c0392b;
+  }
+  .card-action-btn.favorited {
+    color: #f39c12;
+  }
+  .card-action-btn.favorited:hover {
+    color: #e67e22;
+  }
+  .card-action-btn .sep {
+    color: var(--border-light);
+    margin: 0 2px;
+    user-select: none;
+  }
+
+  /* ═══════════════════════════════════════════════
+     🆕 改动3: 播客模式
+     ═══════════════════════════════════════════════ */
+  .podcast-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #0d1117;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    color: #e6edf3;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .podcast-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .podcast-container {
+    width: 100%;
+    max-width: 480px;
+    height: 100%;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .podcast-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-shrink: 0;
+  }
+  .podcast-header .podcast-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #58a6ff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .podcast-close {
+    font-size: 24px;
+    color: #8b949e;
+    cursor: pointer;
+    background: none;
+    border: none;
+    line-height: 1;
+    padding: 6px;
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+  .podcast-close:hover {
+    color: #f0f6fc;
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* Podcast Now Playing Card */
+  .podcast-now-playing {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 16px;
+    padding: 24px 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .podcast-now-playing .podcast-art-icon {
+    font-size: 48px;
+    margin-bottom: 14px;
+    display: block;
+  }
+  .podcast-now-playing .podcast-art-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #f0f6fc;
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .podcast-now-playing .podcast-art-cat {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 3px;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  .podcast-now-playing .podcast-art-ai {
+    font-size: 13px;
+    color: #8b949e;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  /* Podcast Progress */
+  .podcast-progress-area {
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  .podcast-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #21262d;
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    overflow: visible;
+  }
+  .podcast-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #58a6ff, #3fb950);
+    border-radius: 2px;
+    transition: width 0.3s linear;
+    width: 0%;
+  }
+  .podcast-time-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #8b949e;
+    margin-top: 6px;
+  }
+
+  /* Podcast Controls */
+  .podcast-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 24px;
+    flex-shrink: 0;
+  }
+  .podcast-ctrl-btn {
+    font-size: 24px;
+    background: none;
+    border: none;
+    color: #8b949e;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .podcast-ctrl-btn:hover {
+    color: #f0f6fc;
+    background: rgba(255,255,255,0.08);
+  }
+  .podcast-ctrl-btn.play-btn {
+    font-size: 40px;
+    color: #58a6ff;
+    background: rgba(88,166,255,0.12);
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .podcast-ctrl-btn.play-btn:hover {
+    background: rgba(88,166,255,0.25);
+  }
+
+  /* Podcast Playlist */
+  .podcast-playlist {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .podcast-playlist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 600;
+    color: #c9d1d9;
+    margin-bottom: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .podcast-playlist-header .toggle-icon {
+    transition: transform 0.2s;
+    font-size: 12px;
+  }
+  .podcast-playlist-header.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+  }
+  .podcast-playlist-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .podcast-playlist-items.collapsed {
+    display: none;
+  }
+  .podcast-playlist-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    color: #8b949e;
+    border: 1px solid transparent;
+  }
+  .podcast-playlist-item:hover {
+    background: rgba(255,255,255,0.04);
+    color: #c9d1d9;
+  }
+  .podcast-playlist-item.playing {
+    background: rgba(88,166,255,0.1);
+    border-color: rgba(88,166,255,0.3);
+    color: #58a6ff;
+  }
+  .podcast-playlist-item.played {
+    color: #3fb950;
+  }
+  .podcast-playlist-item .pl-status {
+    font-size: 14px;
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+  }
+  .podcast-playlist-item .pl-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Podcast Loading */
+  .podcast-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    color: #8b949e;
+    font-size: 13px;
+  }
+  .podcast-loading .podcast-spinner {
+    width: 16px; height: 16px;
+    border: 2px solid #30363d;
+    border-top-color: #58a6ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* Podcast mode button in nav */
+  .podcast-nav-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 16px;
+    border: 1.5px solid #8b5cf6;
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    color: #6d28d9;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .podcast-nav-btn:hover {
+    background: #ede9fe;
+    border-color: #7c3aed;
+    color: #5b21b6;
+  }
+
+  @media (max-width: 640px) {
+    .podcast-container { padding: 14px; }
+    .podcast-now-playing { padding: 18px 14px; }
+    .podcast-controls { gap: 16px; }
+    .podcast-ctrl-btn.play-btn { width: 56px; height: 56px; font-size: 32px; }
+    .card-action-bar { gap: 2px; }
+    .card-action-btn { font-size: 11px; padding: 2px 8px; }
+  }
+
+  /* ─── Accessibility: Focus Styles ─── */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .tab-btn:focus-visible { outline-offset: -1px; }
+  .card-action-btn:focus-visible { outline-offset: 0; }
+</style>
+</head>
+<body>
+<div class="paper-texture"></div>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="kicker">Silicon Valley AI Briefing</div>
+    <h1>硅谷AI晨报<span id="header-date">载入中…</span></h1>
+    <div class="dateline" id="header-dateline">📡 正在加载数据…</div>
+  </div>
+
+  <!-- Category Tabs -->
+  <div class="tabs-bar" id="tabs-bar">
+    <button class="tab-btn active" data-cat="全部">全部</button>
+    <button class="tab-btn" data-cat="公司动态">公司动态</button>
+    <button class="tab-btn" data-cat="技术突破">技术突破</button>
+    <button class="tab-btn" data-cat="产品发布">产品发布</button>
+    <button class="tab-btn" data-cat="观点评论">观点评论</button>
+    <button class="tab-btn" data-cat="学术前沿">学术前沿</button>
+  </div>
+
+  <!-- Floating Preference Sidebar -->
+  <div class="pref-bar" id="pref-bar">
+    <div class="pref-label">偏好设置</div>
+    <div class="pref-item"><span class="pref-cat">公司动态</span><button class="pref-btn pref-like" data-cat="公司动态">👍</button><button class="pref-btn pref-dislike" data-cat="公司动态">👎</button></div>
+    <div class="pref-item"><span class="pref-cat">技术突破</span><button class="pref-btn pref-like" data-cat="技术突破">👍</button><button class="pref-btn pref-dislike" data-cat="技术突破">👎</button></div>
+    <div class="pref-item"><span class="pref-cat">产品发布</span><button class="pref-btn pref-like" data-cat="产品发布">👍</button><button class="pref-btn pref-dislike" data-cat="产品发布">👎</button></div>
+    <div class="pref-item"><span class="pref-cat">观点评论</span><button class="pref-btn pref-like" data-cat="观点评论">👍</button><button class="pref-btn pref-dislike" data-cat="观点评论">👎</button></div>
+    <div class="pref-item"><span class="pref-cat">学术前沿</span><button class="pref-btn pref-like" data-cat="学术前沿">👍</button><button class="pref-btn pref-dislike" data-cat="学术前沿">👎</button></div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar" id="stats-bar"></div>
+
+  <!-- Headline -->
+  <div id="headline-area"></div>
+
+  <!-- Articles List -->
+  <div id="articles-area">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>正在加载晨报数据…</p>
+    </div>
+  </div>
+
+  <!-- Editor's Note -->
+  <div id="editor-note-area"></div>
+
+  <!-- Footer -->
+  <div class="footer" id="footer-area">📰 硅谷AI晨报 · 每日自动生成</div>
+
+</div>
+
+<!-- Feedback Floating Button -->
+<button class="feedback-fab" id="feedback-fab" title="意见反馈">💬</button>
+
+<!-- Feedback Modal -->
+<div class="feedback-overlay" id="feedback-overlay">
+  <div class="feedback-modal">
+    <span class="close-btn" id="feedback-close">&times;</span>
+    <h3>💬 意见反馈</h3>
+    <div class="feedback-field">
+      <label for="feedback-type">反馈类型</label>
+      <select id="feedback-type">
+        <option value="内容建议">内容建议</option>
+        <option value="功能需求">功能需求</option>
+        <option value="Bug反馈">Bug反馈</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+    <div class="feedback-field">
+      <label for="feedback-content">反馈内容</label>
+      <textarea id="feedback-content" placeholder="说说你的想法..." maxlength="2000"></textarea>
+    </div>
+    <button class="feedback-submit" id="feedback-submit">提交反馈</button>
+  </div>
+</div>
+
+<!-- Success Toast -->
+<div class="feedback-toast" id="feedback-toast">感谢反馈！✨</div>
+
+<!-- 🎙️ Podcast Mode Overlay -->
+<div class="podcast-overlay" id="podcast-overlay">
+  <div class="podcast-container">
+    <div class="podcast-header">
+      <span class="podcast-title">🎙️ 硅谷AI晨报·播客</span>
+      <button class="podcast-close" id="podcast-close" title="退出播客">&times;</button>
+    </div>
+    <!-- Now Playing -->
+    <div class="podcast-now-playing" id="podcast-now-playing">
+      <span class="podcast-art-icon">📻</span>
+      <div class="podcast-art-title" id="podcast-art-title">准备播放…</div>
+      <span class="podcast-art-cat" id="podcast-art-cat" style="background:#8b949e;">-</span>
+      <div class="podcast-art-ai" id="podcast-art-ai"></div>
+    </div>
+    <!-- Progress -->
+    <div class="podcast-progress-area">
+      <div class="podcast-progress-bar" id="podcast-progress-bar">
+        <div class="podcast-progress-fill" id="podcast-progress-fill"></div>
+      </div>
+      <div class="podcast-time-row">
+        <span id="podcast-time-elapsed">00:00</span>
+        <span id="podcast-time-total">00:00</span>
+      </div>
+    </div>
+    <!-- Controls -->
+    <div class="podcast-controls">
+      <button class="podcast-ctrl-btn" id="podcast-prev" title="上一首">⏮</button>
+      <button class="podcast-ctrl-btn play-btn" id="podcast-play" title="播放/暂停">▶️</button>
+      <button class="podcast-ctrl-btn" id="podcast-next" title="下一首">⏭</button>
+    </div>
+    <!-- Playlist -->
+    <div class="podcast-playlist">
+      <div class="podcast-playlist-header" id="podcast-playlist-header">
+        <span>📋 播放列表 (<span id="podcast-playlist-count">0</span>)</span>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="podcast-playlist-items" id="podcast-playlist-items">
+        <div class="podcast-loading"><div class="podcast-spinner"></div> 加载中…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Discussion Panel -->
+<div class="chat-overlay" id="chat-overlay"></div>
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <span class="chat-title" id="chat-title">💬 AI 讨论</span>
+    <button class="chat-close" id="chat-close">&times;</button>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-empty">开始和 AI 讨论这篇文章吧 💬</div>
+  </div>
+  <div class="chat-input-row">
+    <input type="text" id="chat-input" placeholder="输入你的问题…" maxlength="2000"
+      onkeydown="if(event.key==='Enter') sendChatMessage()">
+    <button class="chat-send-btn" id="chat-send-btn" onclick="sendChatMessage()">发送</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ─── 用户标识 & API 配置 ───
+  const DEVICE_ID = localStorage.getItem('hermes_device_id') ||
+    (() => { const id = crypto.randomUUID(); localStorage.setItem('hermes_device_id', id); return id; })();
+  const API_BASE = 'http://localhost:8898';
+
+  // 通用 API 请求封装（静默失败，返回 null）
+  async function apiGet(path) {
+    try {
+      const resp = await fetch(API_BASE + path, {
+        headers: { "Authorization": "Bearer hermes-morning-brief-2026" }
+      });
+      if (!resp.ok) return null;
+      return await resp.json();
+    } catch(e) { return null; }
+  }
+  async function apiPost(path, body) {
+    try {
+      await fetch(API_BASE + path, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer hermes-morning-brief-2026"
+        },
+        body: JSON.stringify(body)
+      });
+    } catch(e) { /* 静默忽略 */ }
+  }
+
+  const CATS = ['全部', '公司动态', '技术突破', '产品发布', '观点评论', '学术前沿'];
+  let currentCat = '全部';
+  let allArticles = [];
+  let dataDate = '';
+  let editorNote = '';
+  let headlineText = '';
+
+  // ─── localStorage helpers ───
+  async function loadPrefs() {
+    // API 优先
+    const apiData = await apiGet('/api/prefs?user_id=' + DEVICE_ID);
+    if (apiData && apiData.prefs) {
+      // 同步到 localStorage
+      localStorage.setItem(LS_PREFIX + 'prefs', JSON.stringify(apiData.prefs));
+      return apiData.prefs;
+    }
+    // 降级到 localStorage
+    try { return JSON.parse(localStorage.getItem(LS_PREFIX + 'prefs') || '{}'); } catch(e) { return {}; }
+  }
+  function savePrefs(prefs) {
+    localStorage.setItem(LS_PREFIX + 'prefs', JSON.stringify(prefs));
+    // 异步 POST 到服务端（静默忽略失败）
+    apiPost('/api/prefs', { user_id: DEVICE_ID, prefs: prefs });
+  }
+
+  async function loadComments() {
+    // API 优先
+    const apiData = await apiGet('/api/comments?user_id=' + DEVICE_ID);
+    if (apiData && apiData.comments) {
+      localStorage.setItem(LS_PREFIX + 'comments', JSON.stringify(apiData.comments));
+      return apiData.comments;
+    }
+    // 降级到 localStorage
+    try { return JSON.parse(localStorage.getItem(LS_PREFIX + 'comments') || '{}'); } catch(e) { return {}; }
+  }
+  function saveComments(comments) {
+    localStorage.setItem(LS_PREFIX + 'comments', JSON.stringify(comments));
+    apiPost('/api/comments', { user_id: DEVICE_ID, comments: comments });
+  }
+
+  // ─── Render ───
+  async function renderPrefButtons() {
+    const prefs = await loadPrefs();
+    // Update sidebar buttons
+    document.querySelectorAll('.pref-btn').forEach(btn => {
+      const cat = btn.dataset.cat;
+      btn.classList.remove('liked', 'disliked');
+      if (prefs[cat] === 'like') btn.classList.add('liked');
+      if (prefs[cat] === 'dislike') btn.classList.add('disliked');
+    });
+    // Update article card action buttons
+    document.querySelectorAll('.action-btn').forEach(btn => {
+      const cat = btn.dataset.cat;
+      btn.classList.remove('liked', 'disliked');
+      if (btn.classList.contains('action-more') && prefs[cat] === 'like') btn.classList.add('liked');
+      if (btn.classList.contains('action-less') && prefs[cat] === 'dislike') btn.classList.add('disliked');
+    });
+  }
+
+  function renderStats() {
+    const statsEl = document.getElementById('stats-bar');
+    if (!statsEl) return;
+    const filtered = getFilteredArticles();
+    let text = '';
+    if (currentCat === '全部') {
+      text = `📋 共 ${allArticles.length} 篇文章 · 筛选后显示 ${filtered.length} 篇`;
+    } else {
+      text = `📋 分类「${currentCat}」· ${filtered.length} 篇文章`;
+    }
+    const isPlayingAll = (currentVoiceState && currentVoiceState.mode === 'all');
+    statsEl.innerHTML = `<span class="stats-text">${text}</span>
+      <button class="podcast-nav-btn" id="podcast-nav-btn" onclick="openPodcastMode()" title="播客模式">
+        🎙️ 播客模式
+      </button>
+      <button class="global-voice-btn${isPlayingAll ? ' playing' : ''}" id="global-voice-btn"
+        onclick="togglePlayAll()" title="按顺序朗读所有可见文章">
+        ${isPlayingAll ? '🔇 停止播放' : '🔊 全部播放'}
+      </button>`;
+  }
+
+  function getFilteredArticles() {
+    if (currentCat === '全部') return allArticles;
+    return allArticles.filter(a => a.category === currentCat);
+  }
+
+  function renderHeadline() {
+    const el = document.getElementById('headline-area');
+    if (!headlineText) { el.innerHTML = ''; return; }
+    el.innerHTML = `
+      <div class="headline-card">
+        <span class="headline-tag">🔥 今日头条</span>
+        <p>${escapeHtml(headlineText)}</p>
+      </div>`;
+  }
+
+  function renderEditorNote() {
+    const el = document.getElementById('editor-note-area');
+    if (!editorNote) { el.innerHTML = ''; return; }
+    el.innerHTML = `
+      <div class="commentary">
+        <div class="label">💡 润之点评</div>
+        <p>${escapeHtml(editorNote)}</p>
+      </div>`;
+  }
+
+  async function renderArticles() {
+    const container = document.getElementById('articles-area');
+    const filtered = getFilteredArticles();
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="loading-state"><p>📭 该分类下暂无文章</p></div>`;
+      return;
+    }
+
+    const localComments = await loadComments();
+    const favorites = await loadFavorites();
+    const likes = await loadLikes();
+
+    // 预加载所有文章的历史对话（API 优先，localStorage 兜底）
+    const chatHistories = {};
+    const chatCounts = {};
+    for (const article of filtered) {
+      chatHistories[article.id] = await loadChatHistory(article.id);
+      chatCounts[article.id] = chatHistories[article.id].length;
+    }
+
+    container.innerHTML = filtered.map(article => {
+      const artComments = localComments[article.id] || [];
+      const hasOrigComments = article.top_comments && article.top_comments.length > 0;
+      const hasScore = article.points > 0;
+      const isFav = favorites[article.id];
+      const likeCount = likes[article.id] || 0;
+      const isLiked = likeCount > 0;
+      const chatCount = chatCounts[article.id] || 0;
+      const chatHistory = chatHistories[article.id] || [];
+
+      const actionBar = `
+          <div class="card-action-bar">
+            <button class="card-action-btn like-btn${isLiked ? ' liked' : ''}" data-id="${escapeHtml(article.id)}" onclick="event.stopPropagation();toggleLike('${escapeHtml(article.id)}')">
+              ${isLiked ? '❤️' : '🤍'} 喜欢${likeCount > 0 ? ' (' + likeCount + ')' : ''}
+            </button>
+            <span class="sep">|</span>
+            <button class="card-action-btn fav-btn${isFav ? ' favorited' : ''}" data-id="${escapeHtml(article.id)}" onclick="event.stopPropagation();toggleFavorite('${escapeHtml(article.id)}')">
+              ${isFav ? '⭐' : '☆'} 收藏
+            </button>
+            <span class="sep">|</span>
+            <button class="card-action-btn share-btn" data-id="${escapeHtml(article.id)}" onclick="event.stopPropagation();shareArticle('${escapeHtml(article.id)}')">
+              📤 转发
+            </button>
+            <span class="sep">|</span>
+            <button class="card-action-btn discuss-action-btn" data-id="${escapeHtml(article.id)}" onclick="event.stopPropagation();toggleArticleAndSwitchTab('${escapeHtml(article.id)}', 'discuss')">
+              💬 讨论${chatCount > 0 ? ' (' + chatCount + ')' : ''}
+            </button>
+          </div>`;
+
+      return `
+      <div class="article-card" data-id="${escapeHtml(article.id)}" id="card-${escapeHtml(article.id)}">
+        <div class="card-header" onclick="toggleArticle('${escapeHtml(article.id)}')">
+          <span class="card-expand-icon">▶</span>
+          <div class="card-main">
+            <div class="card-title-row">
+              <div class="card-title">${escapeHtml(article.title)}</div>
+              <button class="voice-btn" data-id="${escapeHtml(article.id)}"
+                onclick="event.stopPropagation();toggleVoice(this)" title="语音朗读">🔊</button>
+            </div>
+            <div class="card-meta-row">
+              <span class="cat-tag cat-${escapeHtml(article.category)}">${escapeHtml(article.category)}</span>
+              <span class="card-author">👤 ${escapeHtml(article.author)}${article.author_title ? ' · ' + escapeHtml(article.author_title) : ''}</span>
+              ${article.url ? `<span class="card-link">🔗 <a href="${escapeHtml(article.url)}" target="_blank" onclick="event.stopPropagation()">原文链接</a></span>` : ''}
+              ${hasScore ? `<span class="card-score">👍 ${article.points} 分<span>💬 ${article.comment_count} 评论</span></span>` : ''}
+            </div>
+            <div class="ai-comment">
+              <span class="ai-icon">🤖</span>
+              <span class="ai-text">AI点评：${escapeHtml(article.ai_comment || '暂无点评')}</span>
+            </div>
+            ${actionBar}
+          </div>
+        </div>
+        <div class="card-expanded-content">
+          <div class="card-summary">${escapeHtml(article.summary || '')}</div>
+          <div class="article-actions">
+            <button class="action-btn action-more" data-cat="${escapeHtml(article.category)}">👍 多看这类</button>
+            <button class="action-btn action-less" data-cat="${escapeHtml(article.category)}">👎 少看这类</button>
+          </div>
+
+          <!-- 🆕 Tab 切换: AI讨论 | 读者评论 -->
+          <div class="card-tabs">
+            <button class="card-tab-btn active" data-tab="discuss" data-article-id="${escapeHtml(article.id)}"
+              onclick="event.stopPropagation();switchCardTab(this, '${escapeHtml(article.id)}', 'discuss')">
+              💬 AI讨论${chatCount > 0 ? ' (' + chatCount + ')' : ''}
+            </button>
+            <button class="card-tab-btn" data-tab="comments" data-article-id="${escapeHtml(article.id)}"
+              onclick="event.stopPropagation();switchCardTab(this, '${escapeHtml(article.id)}', 'comments')">
+              💭 读者评论 (${artComments.length})
+            </button>
+          </div>
+
+          <!-- Tab Content: AI讨论 -->
+          <div class="card-tab-content active" id="tab-discuss-${escapeHtml(article.id)}">
+            <div class="inline-chat-messages" id="inline-chat-msgs-${escapeHtml(article.id)}">
+              ${renderInlineChatMessages(chatHistory)}
+            </div>
+            <div class="comment-input-row">
+              <input type="text" placeholder="和AI讨论这篇文章…" id="inline-chat-input-${escapeHtml(article.id)}" maxlength="2000"
+                onkeydown="if(event.key==='Enter') sendInlineChat('${escapeHtml(article.id)}')">
+              <button onclick="sendInlineChat('${escapeHtml(article.id)}')">发送</button>
+            </div>
+          </div>
+
+          <!-- Tab Content: 读者评论 -->
+          <div class="card-tab-content" id="tab-comments-${escapeHtml(article.id)}">
+            ${hasOrigComments ? `
+            <div class="orig-comments-section">
+              <h4>💬 社区热门评论</h4>
+              ${article.top_comments.map(c => `
+                <div class="orig-comment">
+                  <div class="oc-user">${escapeHtml(c.user)}</div>
+                  <div class="oc-text">${escapeHtml(c.text)}</div>
+                </div>
+              `).join('')}
+            </div>` : ''}
+            <div class="local-comments-section">
+              <h4>💭 读者评论 (${artComments.length})</h4>
+              <div class="comment-input-row">
+                <input type="text" placeholder="写下你的想法…" id="input-${escapeHtml(article.id)}" maxlength="500"
+                  onkeydown="if(event.key==='Enter') submitComment('${escapeHtml(article.id)}')">
+                <button onclick="submitComment('${escapeHtml(article.id)}')">发送</button>
+              </div>
+              <div id="local-comments-${escapeHtml(article.id)}">
+                ${artComments.map((c, i) => `
+                  <div class="local-comment">
+                    <span class="lc-user">读者</span>
+                    <span class="lc-text">${escapeHtml(c)}</span>
+                    <span class="lc-delete" title="删除" onclick="deleteComment('${escapeHtml(article.id)}', ${i})">✕</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ─── Toggle Article ───
+  window.toggleArticle = function(id) {
+    const card = document.getElementById('card-' + id);
+    if (!card) return;
+    card.classList.toggle('expanded');
+  };
+
+  // ─── Comments ───
+  window.submitComment = async function(articleId) {
+    const input = document.getElementById('input-' + articleId);
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    const allComments = await loadComments();
+    if (!allComments[articleId]) allComments[articleId] = [];
+    allComments[articleId].push(text);
+    saveComments(allComments);
+    input.value = '';
+    // 局部更新评论区，避免全量重渲染
+    const container = document.getElementById('local-comments-' + articleId);
+    if (container) {
+      const div = document.createElement('div');
+      div.className = 'local-comment';
+      div.innerHTML = '<span class="lc-user">读者</span><span class="lc-text">' + escapeHtml(text) + '</span><span class="lc-delete" title="删除">✕</span>';
+      container.appendChild(div);
+    }
+    // 更新评论计数
+    const tabBtn = document.querySelector('.card-tab-btn[data-article-id="' + articleId + '"][data-tab="comments"]');
+    if (tabBtn) {
+      const newCount = (allComments[articleId] || []).length;
+      tabBtn.textContent = '💭 读者评论 (' + newCount + ')';
+    }
+  };
+
+  window.deleteComment = async function(articleId, index) {
+    const allComments = await loadComments();
+    if (allComments[articleId]) {
+      allComments[articleId].splice(index, 1);
+      saveComments(allComments);
+    }
+    // 局部更新评论区，避免全量重渲染
+    const container = document.getElementById('local-comments-' + articleId);
+    if (container) {
+      const children = container.querySelectorAll('.local-comment');
+      if (children[index]) children[index].remove();
+    }
+    // 更新评论计数
+    const tabBtn = document.querySelector('.card-tab-btn[data-article-id="' + articleId + '"][data-tab="comments"]');
+    if (tabBtn) {
+      const newCount = (allComments[articleId] || []).length;
+      tabBtn.textContent = '💭 读者评论 (' + newCount + ')';
+    }
+  };
+
+  // ─── Category Filter ───
+  document.getElementById('tabs-bar').addEventListener('click', async function(e) {
+    if (!e.target.classList.contains('tab-btn')) return;
+    currentCat = e.target.dataset.cat;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    renderStats();
+    await renderArticles();
+  });
+
+  // ─── Preference Buttons ───
+  document.getElementById('pref-bar').addEventListener('click', async function(e) {
+    const btn = e.target.closest('.pref-btn');
+    if (!btn) return;
+    const cat = btn.dataset.cat;
+    const prefs = await loadPrefs();
+
+    if (btn.classList.contains('pref-like')) {
+      if (prefs[cat] === 'like') { delete prefs[cat]; }
+      else { prefs[cat] = 'like'; }
+    } else if (btn.classList.contains('pref-dislike')) {
+      if (prefs[cat] === 'dislike') { delete prefs[cat]; }
+      else { prefs[cat] = 'dislike'; }
+    }
+    savePrefs(prefs);
+    await renderPrefButtons();
+  });
+
+  // ─── Article Card Action Buttons ───
+  document.getElementById('articles-area').addEventListener('click', async function(e) {
+    const btn = e.target.closest('.action-btn');
+    if (!btn) return;
+    e.stopPropagation();
+    const cat = btn.dataset.cat;
+    const prefs = await loadPrefs();
+
+    if (btn.classList.contains('action-more')) {
+      if (prefs[cat] === 'like') { delete prefs[cat]; }
+      else { prefs[cat] = 'like'; }
+    } else if (btn.classList.contains('action-less')) {
+      if (prefs[cat] === 'dislike') { delete prefs[cat]; }
+      else { prefs[cat] = 'dislike'; }
+    }
+    savePrefs(prefs);
+    await renderPrefButtons();
+  });
+
+  // ─── Fallback: Parse output.md ───
+  function parseMarkdown(md) {
+    // Strip HTML comment
+    md = md.replace(/<!--[\s\S]*?-->/g, '');
+    const articles = [];
+    let headline = '';
+    let editorNote = '';
+    let date = '';
+
+    // Extract date from first heading
+    const dateMatch = md.match(/# 硅谷AI晨报\s*\|\s*(.+)/);
+    if (dateMatch) date = dateMatch[1].trim();
+
+    // Extract headline
+    const hlMatch = md.match(/## 🔥 今日头条\n\*\*(.+?)\*\*/s);
+    if (hlMatch) headline = hlMatch[1].trim();
+
+    // Extract editor note
+    const enMatch = md.match(/## 💡 润之点评\n>\s*(.+)/s);
+    if (enMatch) editorNote = enMatch[1].trim();
+
+    // Extract HN articles
+    const hnSection = md.match(/## 📰 社区热议[\s\S]*?(?=## 📄|$)/);
+    if (hnSection) {
+      const items = hnSection[0].split(/\n- \*\*/).slice(1);
+      items.forEach(item => {
+        const titleMatch = item.match(/^(.+?)\*\*/);
+        const authorMatch = item.match(/👤 作者[：:]\s*(.+)/);
+        const summaryMatch = item.match(/📝 详述[：:]\s*(.+)/);
+        const linkMatch = item.match(/🔗 \[原文链接\]\((.+?)\)/);
+        const scoreMatch = item.match(/👍 (\d+) 分\s*\|\s*💬 (\d+) 评论/);
+        if (titleMatch) {
+          let cat = '产品发布';
+          const title = titleMatch[1].trim();
+          if (title.includes('隐私') || title.includes('Tinfoil') || title.includes('干预') || title.includes('Mentat')) cat = '技术突破';
+          if (title.includes('Spine') || title.includes('可视化')) cat = '产品发布';
+
+          articles.push({
+            id: 'md_' + articles.length,
+            title: title,
+            category: cat,
+            summary: summaryMatch ? summaryMatch[1].trim() : '',
+            ai_comment: '',
+            author: authorMatch ? authorMatch[1].trim() : '',
+            author_title: '',
+            url: linkMatch ? linkMatch[1] : '',
+            points: scoreMatch ? parseInt(scoreMatch[1]) : 0,
+            comment_count: scoreMatch ? parseInt(scoreMatch[2]) : 0,
+            top_comments: [],
+            source_type: 'hn'
+          });
+        }
+      });
+    }
+
+    // Extract paper articles
+    const paperSection = md.match(/## 📄 论文速览[\s\S]*?(?=## 📝|$)/);
+    if (paperSection) {
+      const items = paperSection[0].split(/\n- \*\*/).slice(1);
+      items.forEach(item => {
+        const titleMatch = item.match(/^(.+?)\*\*/);
+        const summaryMatch = item.match(/📖 核心发现[：:]\s*(.+)/);
+        const authorMatch = item.match(/👥 作者[：:]\s*(.+)/);
+        const linkMatch = item.match(/🔗 \[论文链接\]\((.+?)\)/);
+        if (titleMatch) {
+          articles.push({
+            id: 'md_' + articles.length,
+            title: titleMatch[1].trim(),
+            category: '学术前沿',
+            summary: summaryMatch ? summaryMatch[1].trim() : '',
+            ai_comment: '',
+            author: authorMatch ? authorMatch[1].trim() : '',
+            author_title: '研究团队',
+            url: linkMatch ? linkMatch[1] : '',
+            points: 0,
+            comment_count: 0,
+            top_comments: [],
+            source_type: 'paper'
+          });
+        }
+      });
+    }
+
+    // Extract X posts
+    const xSection = md.match(/## 📝 X精选[\s\S]*?(?=## 🎬|$)/);
+    if (xSection) {
+      const items = xSection[0].split(/\n- \*\*/).slice(1);
+      items.forEach(item => {
+        const handleMatch = item.match(/^@(\w+)/);
+        const nameMatch = item.match(/（(.+?)）/);
+        const summaryMatch = item.match(/背景解读[：:]\s*(.+)/);
+        const linkMatch = item.match(/🔗 \[原文链接\]\((.+?)\)/);
+        if (handleMatch) {
+          articles.push({
+            id: 'md_' + articles.length,
+            title: item.split('\n')[0].replace(/^\*\*@\w+（[^)]+）[：:]/, '').replace(/\*\*$/, '').trim(),
+            category: '观点评论',
+            summary: summaryMatch ? summaryMatch[1].trim() : '',
+            ai_comment: '',
+            author: handleMatch[1],
+            author_title: nameMatch ? nameMatch[1] : '',
+            url: linkMatch ? linkMatch[1] : '',
+            points: 0,
+            comment_count: 0,
+            top_comments: [],
+            source_type: 'x'
+          });
+        }
+      });
+    }
+
+    return { date, headline, articles, editorNote };
+  }
+
+  // ─── Load Data ───
+  async function loadData() {
+    try {
+      // Try output.json first
+      const resp = await fetch('output.json');
+      if (!resp.ok) throw new Error('JSON not available');
+      const data = await resp.json();
+      dataDate = data.date || '';
+      headlineText = data.headline || '';
+      editorNote = data.editor_note || '';
+      allArticles = (data.articles || []).map(a => ({
+        ...a,
+        id: a.id || ('j_' + Math.random().toString(36).slice(2)),
+        category: a.category || '观点评论',
+        ai_comment: a.ai_comment || '',
+        summary: a.summary || '',
+        author: a.author || '',
+        author_title: a.author_title || '',
+        url: a.url || '',
+        points: a.points || 0,
+        comment_count: a.comment_count || 0,
+        top_comments: a.top_comments || []
+      }));
+      document.getElementById('header-dateline').textContent = '📡 数据来源：JSON · 自动生成';
+    } catch (e) {
+      console.warn('output.json 加载失败，尝试降级到 output.md:', e.message);
+      // Fallback to output.md
+      try {
+        const resp = await fetch('output.md');
+        if (!resp.ok) throw new Error('MD not available');
+        const md = await resp.text();
+        const parsed = parseMarkdown(md);
+        dataDate = parsed.date;
+        headlineText = parsed.headline;
+        editorNote = parsed.editorNote;
+        allArticles = parsed.articles;
+        document.getElementById('header-dateline').textContent = '📡 数据来源：Markdown 降级 · 自动生成';
+      } catch (e2) {
+        console.error('output.md 也加载失败:', e2.message);
+        document.getElementById('articles-area').innerHTML = `
+          <div class="error-state">
+            <p style="font-size:18px;">😞</p>
+            <p>数据加载失败，请确保 output.json 或 output.md 文件存在。</p>
+            <p style="font-size:12px;margin-top:8px;">${escapeHtml(e2.message)}</p>
+          </div>`;
+        document.getElementById('header-dateline').textContent = '⚠️ 数据加载失败';
+        return;
+      }
+    }
+
+    // Update header
+    document.getElementById('header-date').textContent = dataDate;
+    await renderPrefButtons();
+    renderHeadline();
+    renderEditorNote();
+    renderStats();
+    await renderArticles();
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ─── Voice Playback (Web Speech API) ───
+  let currentVoiceState = null; // { articleId, mode: 'single'|'all' }
+  let cachedVoices = [];
+
+  function loadVoices() {
+    return new Promise((resolve) => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) { cachedVoices = voices; resolve(voices); return; }
+      window.speechSynthesis.onvoiceschanged = () => {
+        cachedVoices = window.speechSynthesis.getVoices();
+        resolve(cachedVoices);
+      };
+    });
+  }
+
+  function getZhVoice() {
+    return cachedVoices.find(v => v.lang.startsWith('zh-CN'))
+      || cachedVoices.find(v => v.lang.startsWith('zh'))
+      || null;
+  }
+
+  function stopVoice() {
+    window.speechSynthesis.cancel();
+    if (currentVoiceState) {
+      const prevId = currentVoiceState.articleId;
+      updateVoiceBtn(prevId, false);
+      currentVoiceState = null;
+    }
+    renderStats();
+  }
+
+  function updateVoiceBtn(articleId, playing) {
+    const btn = document.querySelector(`.voice-btn[data-id="${CSS.escape(articleId)}"]`);
+    if (btn) {
+      btn.classList.toggle('playing', playing);
+      btn.textContent = playing ? '🔇' : '🔊';
+      btn.title = playing ? '停止朗读' : '语音朗读';
+    }
+  }
+
+  function getArticleSpeechText(article) {
+    const parts = [];
+    parts.push(article.title);
+    if (article.ai_comment) parts.push('AI点评：' + article.ai_comment);
+    if (article.summary) parts.push('摘要：' + article.summary);
+    return parts.join('。');
+  }
+
+  function speakText(text) {
+    return new Promise((resolve) => {
+      // Chrome bug workaround: resume if paused
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-CN';
+      utterance.rate = 0.9;
+      utterance.volume = 1;
+
+      const zhVoice = getZhVoice();
+      if (zhVoice) utterance.voice = zhVoice;
+
+      let resolved = false;
+      const done = () => { if (!resolved) { resolved = true; resolve(); } };
+
+      utterance.onend = done;
+      utterance.onerror = () => {
+        // If interrupted by cancel, that's intentional
+        done();
+      };
+
+      window.speechSynthesis.speak(utterance);
+
+      // Chrome sometimes hangs — force-resume every 3s
+      const keepAlive = setInterval(() => {
+        if (resolved) { clearInterval(keepAlive); return; }
+        if (window.speechSynthesis.paused || !window.speechSynthesis.speaking) {
+          window.speechSynthesis.resume();
+        }
+      }, 3000);
+
+      // Safety timeout: max 60s per article
+      setTimeout(() => { clearInterval(keepAlive); done(); }, 60000);
+    });
+  }
+
+  window.toggleVoice = async function(btn) {
+    const articleId = btn.dataset.id;
+
+    // If this article is already playing in single mode, stop
+    if (currentVoiceState && currentVoiceState.articleId === articleId && currentVoiceState.mode === 'single') {
+      stopVoice();
+      return;
+    }
+
+    // Stop current playback
+    stopVoice();
+
+    const article = allArticles.find(a => a.id === articleId);
+    if (!article) return;
+
+    // Preload voices
+    await loadVoices();
+
+    currentVoiceState = { articleId, mode: 'single' };
+    updateVoiceBtn(articleId, true);
+    renderStats();
+
+    const text = getArticleSpeechText(article);
+    await speakText(text);
+
+    // Done — only reset if still in same state
+    if (currentVoiceState && currentVoiceState.articleId === articleId && currentVoiceState.mode === 'single') {
+      updateVoiceBtn(articleId, false);
+      currentVoiceState = null;
+      renderStats();
+    }
+  };
+
+  window.togglePlayAll = async function() {
+    // If already playing all, stop
+    if (currentVoiceState && currentVoiceState.mode === 'all') {
+      stopVoice();
+      return;
+    }
+
+    stopVoice();
+    await loadVoices();
+
+    const filtered = getFilteredArticles();
+    if (filtered.length === 0) return;
+
+    currentVoiceState = { mode: 'all', articleId: filtered[0].id };
+    renderStats();
+
+    for (let i = 0; i < filtered.length; i++) {
+      if (!currentVoiceState || currentVoiceState.mode !== 'all') break;
+
+      const article = filtered[i];
+      currentVoiceState.articleId = article.id;
+      updateVoiceBtn(article.id, true);
+      renderStats();
+
+      const text = getArticleSpeechText(article);
+      await speakText(text);
+
+      if (!currentVoiceState || currentVoiceState.mode !== 'all') break;
+      updateVoiceBtn(article.id, false);
+    }
+
+    if (currentVoiceState && currentVoiceState.mode === 'all') {
+      currentVoiceState = null;
+      renderStats();
+    }
+  };
+
+  // ─── Feedback ───
+  function loadFeedback() {
+    try { return JSON.parse(localStorage.getItem(LS_PREFIX + 'feedback_list') || '[]'); } catch(e) { return []; }
+  }
+  function saveFeedback(list) { localStorage.setItem(LS_PREFIX + 'feedback_list', JSON.stringify(list)); }
+
+  function showToast() {
+    const toast = document.getElementById('feedback-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1500);
+  }
+
+  function openFeedback() {
+    document.getElementById('feedback-overlay').classList.add('active');
+    document.getElementById('feedback-content').focus();
+  }
+
+  function closeFeedback() {
+    document.getElementById('feedback-overlay').classList.remove('active');
+    document.getElementById('feedback-content').value = '';
+  }
+
+  async function submitFeedback() {
+    const type = document.getElementById('feedback-type').value;
+    const content = document.getElementById('feedback-content').value.trim();
+    if (!content) {
+      document.getElementById('feedback-content').focus();
+      return;
+    }
+
+    const entry = {
+      type: type,
+      content: content,
+      time: new Date().toISOString()
+    };
+
+    // 本地存储
+    const list = loadFeedback();
+    list.push(entry);
+    saveFeedback(list);
+
+    // 异步 POST 到后端（静默忽略失败）
+    try {
+      await fetch('http://localhost:8899/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      });
+    } catch(e) {
+      // 静默忽略
+    }
+
+    // 显示成功提示并关闭
+    showToast();
+    setTimeout(() => closeFeedback(), 1500);
+  }
+
+  document.getElementById('feedback-fab').addEventListener('click', openFeedback);
+  document.getElementById('feedback-close').addEventListener('click', closeFeedback);
+  document.getElementById('feedback-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeFeedback();
+  });
+  document.getElementById('feedback-submit').addEventListener('click', submitFeedback);
+
+  // ─── Chat Discussion Panel ───
+  let currentChatArticleId = null;
+  let currentChatArticle = null;
+  let isChatLoading = false;
+
+  async function loadChatHistory(articleId) {
+    // API 优先
+    const apiData = await apiGet('/api/chat/history?article_id=' + articleId + '&user_id=' + DEVICE_ID);
+    if (apiData && apiData.history && Array.isArray(apiData.history)) {
+      localStorage.setItem(LS_PREFIX + 'chat_history_' + articleId, JSON.stringify(apiData.history));
+      return apiData.history;
+    }
+    // 降级到 localStorage
+    try {
+      return JSON.parse(localStorage.getItem(LS_PREFIX + 'chat_history_' + articleId) || '[]');
+    } catch(e) { return []; }
+  }
+
+  function saveChatHistory(articleId, history) {
+    localStorage.setItem(LS_PREFIX + 'chat_history_' + articleId, JSON.stringify(history));
+    // 异步 POST 到服务端（静默忽略失败）
+    apiPost('/api/chat/save', { user_id: DEVICE_ID, article_id: articleId, history: history });
+  }
+
+  function scrollChatToBottom() {
+    const msgs = document.getElementById('chat-messages');
+    if (msgs) {
+      setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 100);
+    }
+  }
+
+  function formatChatTime() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    return h + ':' + m;
+  }
+
+  async function renderChatMessages() {
+    const msgsEl = document.getElementById('chat-messages');
+    if (!msgsEl) return;
+
+    const history = await loadChatHistory(currentChatArticleId);
+
+    if (history.length === 0 && !isChatLoading) {
+      msgsEl.innerHTML = '<div class="chat-empty">开始和 AI 讨论这篇文章吧 💬</div>';
+      return;
+    }
+
+    let html = '';
+    history.forEach(msg => {
+      const role = msg.role === 'user' ? 'user' : 'ai';
+      html += `
+        <div class="chat-msg ${role}">
+          <div class="msg-bubble">${escapeHtml(msg.content)}</div>
+          <div class="msg-time">${escapeHtml(msg.time || '')}</div>
+        </div>`;
+    });
+
+    msgsEl.innerHTML = html;
+    scrollChatToBottom();
+  }
+
+  window.openChatPanel = async function(articleId) {
+    currentChatArticleId = articleId;
+    currentChatArticle = allArticles.find(a => a.id === articleId) || {};
+
+    // Set title
+    const titleEl = document.getElementById('chat-title');
+    if (titleEl) {
+      titleEl.textContent = '💬 ' + (currentChatArticle.title || 'AI 讨论');
+    }
+
+    // Load and render history
+    await renderChatMessages();
+
+    // Show panel
+    document.getElementById('chat-overlay').classList.add('active');
+    document.getElementById('chat-panel').classList.add('active');
+
+    // Focus input
+    setTimeout(() => {
+      const input = document.getElementById('chat-input');
+      if (input) input.focus();
+    }, 350);
+
+    scrollChatToBottom();
+  };
+
+  function closeChatPanel() {
+    document.getElementById('chat-overlay').classList.remove('active');
+    document.getElementById('chat-panel').classList.remove('active');
+    currentChatArticleId = null;
+    currentChatArticle = null;
+    isChatLoading = false;
+  }
+
+  document.getElementById('chat-close').addEventListener('click', closeChatPanel);
+  document.getElementById('chat-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeChatPanel();
+  });
+
+  window.sendChatMessage = async function() {
+    if (!currentChatArticleId || isChatLoading) return;
+
+    const input = document.getElementById('chat-input');
+    const btn = document.getElementById('chat-send-btn');
+    const text = input.value.trim();
+    if (!text) return;
+
+    // Disable input during loading
+    isChatLoading = true;
+    input.disabled = true;
+    btn.disabled = true;
+    input.value = '';
+
+    // Save user message
+    const history = await loadChatHistory(currentChatArticleId);
+    const userMsg = { role: 'user', content: text, time: formatChatTime() };
+    history.push(userMsg);
+    saveChatHistory(currentChatArticleId, history);
+
+    // Show user message + thinking indicator
+    await renderChatMessages();
+    const msgsEl = document.getElementById('chat-messages');
+    const thinkingHtml = '<div class="chat-thinking">🤖 思考中...<span class="thinking-dots"><span></span><span></span><span></span></span></div>';
+    if (msgsEl) {
+      msgsEl.insertAdjacentHTML('beforeend', thinkingHtml);
+      scrollChatToBottom();
+    }
+
+    try {
+      const article = currentChatArticle || {};
+      const resp = await fetch('http://localhost:8898/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          article_id: currentChatArticleId,
+          article_title: article.title || '',
+          article_summary: article.summary || '',
+          article_ai_comment: article.ai_comment || '',
+          message: text,
+          history: history.slice(0, -1) // exclude the latest user message we just added
+        })
+      });
+
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+      const data = await resp.json();
+      const reply = data.reply || data.content || data.message || '（AI 未返回内容）';
+
+      // Save AI reply
+      const updatedHistory = await loadChatHistory(currentChatArticleId);
+      const aiMsg = { role: 'ai', content: reply, time: formatChatTime() };
+      updatedHistory.push(aiMsg);
+      saveChatHistory(currentChatArticleId, updatedHistory);
+
+      // Re-render
+      await renderChatMessages();
+    } catch (e) {
+      console.error('Chat API error:', e);
+      // Show error message as AI reply
+      const updatedHistory = await loadChatHistory(currentChatArticleId);
+      const errMsg = { role: 'ai', content: '⚠️ 连接失败：' + e.message + '。请确保本地 API 服务已启动（localhost:8898）。', time: formatChatTime() };
+      updatedHistory.push(errMsg);
+      saveChatHistory(currentChatArticleId, updatedHistory);
+      await renderChatMessages();
+    } finally {
+      isChatLoading = false;
+      input.disabled = false;
+      btn.disabled = false;
+      input.focus();
+    }
+  };
+
+  // ═══════════════════════════════════════════════
+  // 🆕 改动2: 收藏/喜欢/转发 功能
+  // ═══════════════════════════════════════════════
+  const LS_PREFIX = 'hermes_ai_brief_';
+
+  async function loadFavorites() {
+    // API 优先
+    const apiData = await apiGet('/api/favorites?user_id=' + DEVICE_ID);
+    if (apiData && apiData.favorites) {
+      localStorage.setItem(LS_PREFIX + 'favorites', JSON.stringify(apiData.favorites));
+      return apiData.favorites;
+    }
+    // 降级到 localStorage
+    try { return JSON.parse(localStorage.getItem(LS_PREFIX + 'favorites') || '{}'); } catch(e) { return {}; }
+  }
+  function saveFavorites(favs) {
+    localStorage.setItem(LS_PREFIX + 'favorites', JSON.stringify(favs));
+    apiPost('/api/favorites', { user_id: DEVICE_ID, favorites: favs });
+  }
+
+  async function loadLikes() {
+    // API 优先 - 尝试从服务端加载
+    const apiData = await apiGet('/api/likes?user_id=' + DEVICE_ID);
+    if (apiData && apiData.likes) {
+      localStorage.setItem(LS_PREFIX + 'likes', JSON.stringify(apiData.likes));
+      return apiData.likes;
+    }
+    // 降级到 localStorage
+    try { return JSON.parse(localStorage.getItem(LS_PREFIX + 'likes') || '{}'); } catch(e) { return {}; }
+  }
+  function saveLikes(lks) {
+    localStorage.setItem(LS_PREFIX + 'likes', JSON.stringify(lks));
+    apiPost('/api/likes', { user_id: DEVICE_ID, likes: lks });
+  }
+
+  function getChatHistoryCount(articleId) {
+    try { return JSON.parse(localStorage.getItem(LS_PREFIX + 'chat_history_' + articleId) || '[]').length; } catch(e) { return 0; }
+  }
+
+  function renderInlineChatMessages(history) {
+    if (!history || history.length === 0) {
+      return '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px;">开始和 AI 讨论这篇文章吧 💬</div>';
+    }
+    return history.map(msg => {
+      const role = msg.role === 'user' ? 'user' : 'ai';
+      return `<div class="inline-chat-msg ${role}">
+        <div class="msg-bubble">${escapeHtml(msg.content)}</div>
+        <div class="msg-time">${escapeHtml(msg.time || '')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  window.toggleLike = function(articleId) {
+    const likes = loadLikes();
+    if (likes[articleId]) {
+      delete likes[articleId];
+    } else {
+      likes[articleId] = 1;
+    }
+    saveLikes(likes);
+    // 局部更新 UI，避免全量重渲染
+    const card = document.getElementById('card-' + articleId);
+    if (!card) return;
+    const likeBtn = card.querySelector('.card-action-btn.like-btn');
+    const likeCount = likes[articleId] || 0;
+    const isLiked = likeCount > 0;
+    if (likeBtn) {
+      likeBtn.classList.toggle('liked', isLiked);
+      likeBtn.innerHTML = (isLiked ? '❤️' : '🤍') + ' 喜欢' + (likeCount > 0 ? ' (' + likeCount + ')' : '');
+    }
+  };
+
+  window.toggleFavorite = function(articleId) {
+    const favs = loadFavorites();
+    if (favs[articleId]) {
+      delete favs[articleId];
+    } else {
+      favs[articleId] = true;
+    }
+    saveFavorites(favs);
+    // 局部更新 UI，避免全量重渲染
+    const card = document.getElementById('card-' + articleId);
+    if (!card) return;
+    const favBtn = card.querySelector('.card-action-btn.fav-btn');
+    const isFav = !!favs[articleId];
+    if (favBtn) {
+      favBtn.classList.toggle('favorited', isFav);
+      favBtn.innerHTML = (isFav ? '⭐' : '☆') + ' 收藏';
+    }
+  };
+
+  window.shareArticle = function(articleId) {
+    const article = allArticles.find(a => a.id === articleId);
+    if (!article) return;
+    const url = article.url || (window.location.href.split('?')[0] + '?article=' + encodeURIComponent(articleId));
+    // Copy to clipboard
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        showToastMsg('链接已复制 📋');
+      }).catch(() => {
+        fallbackCopy(url);
+      });
+    } else {
+      fallbackCopy(url);
+    }
+  };
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showToastMsg('链接已复制 📋'); } catch(e) { showToastMsg('复制失败，请手动复制'); }
+    document.body.removeChild(ta);
+  }
+
+  function showToastMsg(msg) {
+    const toast = document.getElementById('feedback-toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1500);
+  }
+
+  // ═══════════════════════════════════════════════
+  // 🆕 改动1: Tab 切换
+  // ═══════════════════════════════════════════════
+  window.switchCardTab = function(btn, articleId, tabName) {
+    const card = document.getElementById('card-' + articleId);
+    if (!card) return;
+
+    // Update tab buttons
+    card.querySelectorAll('.card-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // Update tab contents
+    card.querySelectorAll('.card-tab-content').forEach(c => c.classList.remove('active'));
+    const target = document.getElementById('tab-' + tabName + '-' + articleId);
+    if (target) target.classList.add('active');
+  };
+
+  window.toggleArticleAndSwitchTab = function(articleId, tabName) {
+    const card = document.getElementById('card-' + articleId);
+    if (!card) return;
+    card.classList.add('expanded');
+
+    // Switch to the specified tab
+    const tabBtn = card.querySelector('.card-tab-btn[data-tab="' + tabName + '"]');
+    if (tabBtn) {
+      switchCardTab(tabBtn, articleId, tabName);
+    }
+
+    // Focus input if discuss tab
+    if (tabName === 'discuss') {
+      setTimeout(() => {
+        const input = document.getElementById('inline-chat-input-' + articleId);
+        if (input) input.focus();
+      }, 200);
+    }
+  };
+
+  // ═══════════════════════════════════════════════
+  // 🆕 改动1: 内联 AI 聊天
+  // ═══════════════════════════════════════════════
+  let inlineChatLoading = {};
+
+  window.sendInlineChat = async function(articleId) {
+    if (inlineChatLoading[articleId]) return;
+    const input = document.getElementById('inline-chat-input-' + articleId);
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    inlineChatLoading[articleId] = true;
+    input.disabled = true;
+    input.value = '';
+
+    // Save user message
+    const history = await loadChatHistory(articleId);
+    const userMsg = { role: 'user', content: text, time: formatChatTime() };
+    history.push(userMsg);
+    saveChatHistory(articleId, history);
+
+    // Update messages display
+    const msgsEl = document.getElementById('inline-chat-msgs-' + articleId);
+    if (msgsEl) {
+      msgsEl.innerHTML = renderInlineChatMessages(history);
+      msgsEl.insertAdjacentHTML('beforeend',
+        '<div class="inline-chat-thinking">🤖 思考中...<span class="thinking-dots"><span></span><span></span><span></span></span></div>');
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    }
+
+    // Update the discuss tab count in action bar
+    updateDiscussCount(articleId);
+
+    try {
+      const article = allArticles.find(a => a.id === articleId) || {};
+      const resp = await fetch('http://localhost:8898/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          article_id: articleId,
+          article_title: article.title || '',
+          article_summary: article.summary || '',
+          article_ai_comment: article.ai_comment || '',
+          message: text,
+          history: history.slice(0, -1)
+        })
+      });
+
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      const reply = data.reply || data.content || data.message || '（AI 未返回内容）';
+
+      const updatedHistory = await loadChatHistory(articleId);
+      const aiMsg = { role: 'ai', content: reply, time: formatChatTime() };
+      updatedHistory.push(aiMsg);
+      saveChatHistory(articleId, updatedHistory);
+
+      if (msgsEl) {
+        msgsEl.innerHTML = renderInlineChatMessages(updatedHistory);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+    } catch (e) {
+      console.error('Inline chat error:', e);
+      const updatedHistory = await loadChatHistory(articleId);
+      const errMsg = { role: 'ai', content: '⚠️ 连接失败：' + e.message + '。请确保本地 API 服务已启动（localhost:8898）。', time: formatChatTime() };
+      updatedHistory.push(errMsg);
+      saveChatHistory(articleId, updatedHistory);
+      if (msgsEl) {
+        msgsEl.innerHTML = renderInlineChatMessages(updatedHistory);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+    } finally {
+      inlineChatLoading[articleId] = false;
+      input.disabled = false;
+      input.focus();
+      updateDiscussCount(articleId);
+    }
+  };
+
+  function updateDiscussCount(articleId) {
+    const count = getChatHistoryCount(articleId);
+    // Update tab button
+    const card = document.getElementById('card-' + articleId);
+    if (card) {
+      const tabBtn = card.querySelector('.card-tab-btn[data-tab="discuss"]');
+      if (tabBtn) tabBtn.textContent = '💬 AI讨论' + (count > 0 ? ' (' + count + ')' : '');
+      // Update action bar button
+      const actionBtn = card.querySelector('.discuss-action-btn');
+      if (actionBtn) actionBtn.textContent = '💬 讨论' + (count > 0 ? ' (' + count + ')' : '');
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // 🆕 改动3: 播客模式
+  // ═══════════════════════════════════════════════
+  let podcastState = {
+    active: false,
+    playlist: [],
+    currentIndex: -1,
+    playing: false,
+    historyLoaded: false,
+    elapsedSeconds: 0,
+    totalSeconds: 0,
+    progressInterval: null
+  };
+  let podcastVoiceState = null; // preserve pre-podcast voice state
+
+  function estimateSpeechSeconds(text) {
+    // Chinese: ~3 chars per second at rate 0.9
+    if (!text) return 10;
+    return Math.max(5, Math.ceil(text.length / 3));
+  }
+
+  function getArticlePodcastText(article) {
+    const parts = [];
+    parts.push(article.title);
+    if (article.ai_comment) parts.push('AI点评：' + article.ai_comment);
+    if (article.summary) parts.push('摘要：' + article.summary);
+    return parts.join('。');
+  }
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  function buildPodcastPlaylist() {
+    const list = [];
+    // Today's articles first
+    allArticles.forEach(a => {
+      list.push({
+        id: a.id,
+        title: a.title,
+        category: a.category,
+        ai_comment: a.ai_comment || '',
+        summary: a.summary || '',
+        text: getArticlePodcastText(a),
+        estimatedSeconds: estimateSpeechSeconds(getArticlePodcastText(a)),
+        source: 'today'
+      });
+    });
+    podcastState.playlist = list;
+  }
+
+  async function loadHistoryForPodcast() {
+    if (podcastState.historyLoaded) return;
+    podcastState.historyLoaded = true;
+    try {
+      const resp = await fetch('http://localhost:8898/api/history?days=7');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const historyArticles = data.articles || data || [];
+      if (Array.isArray(historyArticles) && historyArticles.length > 0) {
+        historyArticles.forEach(a => {
+          podcastState.playlist.push({
+            id: a.id || ('hist_' + Math.random().toString(36).slice(2)),
+            title: a.title || '',
+            category: a.category || '',
+            ai_comment: a.ai_comment || '',
+            summary: a.summary || '',
+            text: getArticlePodcastText(a),
+            estimatedSeconds: estimateSpeechSeconds(getArticlePodcastText(a)),
+            source: 'history'
+          });
+        });
+        renderPodcastPlaylist();
+      }
+    } catch(e) {
+      console.warn('加载历史播客数据失败:', e.message);
+      podcastState.historyLoaded = false;
+    }
+  }
+
+  function renderPodcastPlaylist() {
+    const listEl = document.getElementById('podcast-playlist-items');
+    const countEl = document.getElementById('podcast-playlist-count');
+    if (!listEl || !countEl) return;
+    countEl.textContent = podcastState.playlist.length;
+
+    listEl.innerHTML = podcastState.playlist.map((item, idx) => {
+      let statusIcon = '⏳';
+      if (idx < podcastState.currentIndex) statusIcon = '✅';
+      else if (idx === podcastState.currentIndex) statusIcon = '🔊';
+      const cls = idx === podcastState.currentIndex ? ' playing' : (idx < podcastState.currentIndex ? ' played' : '');
+      return `<div class="podcast-playlist-item${cls}" onclick="podcastSkipTo(${idx})">
+        <span class="pl-status">${statusIcon}</span>
+        <span class="pl-title">${escapeHtml(item.title)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function updatePodcastNowPlaying() {
+    if (podcastState.currentIndex < 0 || podcastState.currentIndex >= podcastState.playlist.length) return;
+    const item = podcastState.playlist[podcastState.currentIndex];
+    document.getElementById('podcast-art-title').textContent = item.title;
+    const catEl = document.getElementById('podcast-art-cat');
+    catEl.textContent = item.category;
+    catEl.className = 'podcast-art-cat cat-' + item.category;
+    document.getElementById('podcast-art-ai').textContent = item.ai_comment ? '🤖 ' + item.ai_comment : '';
+    document.getElementById('podcast-time-total').textContent = formatTime(item.estimatedSeconds);
+    podcastState.totalSeconds = item.estimatedSeconds;
+    podcastState.elapsedSeconds = 0;
+    updatePodcastProgress();
+  }
+
+  function updatePodcastProgress() {
+    const fill = document.getElementById('podcast-progress-fill');
+    const elapsed = document.getElementById('podcast-time-elapsed');
+    if (fill && podcastState.totalSeconds > 0) {
+      const pct = Math.min(100, (podcastState.elapsedSeconds / podcastState.totalSeconds) * 100);
+      fill.style.width = pct + '%';
+    }
+    if (elapsed) {
+      elapsed.textContent = formatTime(podcastState.elapsedSeconds);
+    }
+  }
+
+  function startProgressSimulation() {
+    stopProgressSimulation();
+    podcastState.progressInterval = setInterval(() => {
+      if (!podcastState.playing) return;
+      podcastState.elapsedSeconds++;
+      updatePodcastProgress();
+    }, 1000);
+  }
+
+  function stopProgressSimulation() {
+    if (podcastState.progressInterval) {
+      clearInterval(podcastState.progressInterval);
+      podcastState.progressInterval = null;
+    }
+  }
+
+  function updatePodcastPlayBtn() {
+    const btn = document.getElementById('podcast-play');
+    if (btn) {
+      btn.textContent = podcastState.playing ? '⏸️' : '▶️';
+    }
+  }
+
+  async function playPodcastArticle(index) {
+    if (index < 0 || index >= podcastState.playlist.length) {
+      // Try loading history
+      if (!podcastState.historyLoaded) {
+        await loadHistoryForPodcast();
+        if (index < podcastState.playlist.length) {
+          return playPodcastArticle(index);
+        }
+      }
+      // End of playlist
+      podcastState.playing = false;
+      updatePodcastPlayBtn();
+      stopProgressSimulation();
+      return;
+    }
+
+    podcastState.currentIndex = index;
+    podcastState.playing = true;
+    updatePodcastPlayBtn();
+    updatePodcastNowPlaying();
+    renderPodcastPlaylist();
+
+    const item = podcastState.playlist[index];
+    startProgressSimulation();
+
+    // Use speech synthesis
+    await loadVoices();
+    const text = item.text;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 0.9;
+    utterance.volume = 1;
+    const zhVoice = getZhVoice();
+    if (zhVoice) utterance.voice = zhVoice;
+
+    // Track progress with onboundary
+    utterance.onboundary = function(e) {
+      if (e.charIndex !== undefined) {
+        podcastState.elapsedSeconds = Math.floor(e.charIndex / 3);
+        updatePodcastProgress();
+      }
+    };
+
+    return new Promise((resolve) => {
+      let resolved = false;
+      const done = () => { if (!resolved) { resolved = true; resolve(); } };
+      utterance.onend = done;
+      utterance.onerror = () => done();
+
+      window.speechSynthesis.speak(utterance);
+
+      // Keep-alive for Chrome
+      const keepAlive = setInterval(() => {
+        if (resolved) { clearInterval(keepAlive); return; }
+        if (window.speechSynthesis.paused || !window.speechSynthesis.speaking) {
+          window.speechSynthesis.resume();
+        }
+      }, 3000);
+
+      // Safety timeout
+      setTimeout(() => { clearInterval(keepAlive); done(); }, 120000);
+    });
+  }
+
+  async function podcastNext() {
+    podcastState.playing = false;
+    stopProgressSimulation();
+    window.speechSynthesis.cancel();
+    await playPodcastArticle(podcastState.currentIndex + 1);
+  }
+
+  async function podcastPrev() {
+    podcastState.playing = false;
+    stopProgressSimulation();
+    window.speechSynthesis.cancel();
+    const prevIdx = Math.max(0, podcastState.currentIndex - 1);
+    await playPodcastArticle(prevIdx);
+  }
+
+  async function podcastTogglePlay() {
+    if (podcastState.playing) {
+      // Pause
+      podcastState.playing = false;
+      updatePodcastPlayBtn();
+      stopProgressSimulation();
+      window.speechSynthesis.pause();
+    } else {
+      if (podcastState.currentIndex < 0) {
+        // First time: start from beginning
+        await playPodcastArticle(0);
+      } else {
+        // Resume
+        podcastState.playing = true;
+        updatePodcastPlayBtn();
+        startProgressSimulation();
+        window.speechSynthesis.resume();
+      }
+    }
+  }
+
+  window.podcastSkipTo = async function(index) {
+    podcastState.playing = false;
+    stopProgressSimulation();
+    window.speechSynthesis.cancel();
+    await playPodcastArticle(index);
+  };
+
+  window.openPodcastMode = async function() {
+    // Save current voice state to restore later
+    podcastVoiceState = currentVoiceState;
+    stopVoice();
+
+    // Build playlist
+    buildPodcastPlaylist();
+
+    // Show overlay
+    document.getElementById('podcast-overlay').classList.add('active');
+    podcastState.active = true;
+    podcastState.currentIndex = -1;
+    podcastState.playing = false;
+    podcastState.historyLoaded = false;
+
+    updatePodcastPlayBtn();
+    renderPodcastPlaylist();
+
+    // Auto-start
+    await playPodcastArticle(0);
+  };
+
+  function closePodcastMode() {
+    podcastState.playing = false;
+    podcastState.active = false;
+    stopProgressSimulation();
+    window.speechSynthesis.cancel();
+    document.getElementById('podcast-overlay').classList.remove('active');
+
+    // Restore previous voice state
+    if (podcastVoiceState) {
+      currentVoiceState = podcastVoiceState;
+      podcastVoiceState = null;
+      if (currentVoiceState.articleId) {
+        updateVoiceBtn(currentVoiceState.articleId, true);
+      }
+    }
+  }
+
+  // Podcast event listeners
+  document.getElementById('podcast-close').addEventListener('click', closePodcastMode);
+  document.getElementById('podcast-play').addEventListener('click', podcastTogglePlay);
+  document.getElementById('podcast-next').addEventListener('click', podcastNext);
+  document.getElementById('podcast-prev').addEventListener('click', podcastPrev);
+  document.getElementById('podcast-playlist-header').addEventListener('click', function() {
+    this.classList.toggle('collapsed');
+    document.getElementById('podcast-playlist-items').classList.toggle('collapsed');
+  });
+
+  // Keyboard shortcuts for podcast
+  document.addEventListener('keydown', function(e) {
+    if (!podcastState.active) return;
+    switch(e.key) {
+      case ' ': e.preventDefault(); podcastTogglePlay(); break;
+      case 'ArrowRight': e.preventDefault(); podcastNext(); break;
+      case 'ArrowLeft': e.preventDefault(); podcastPrev(); break;
+      case 'Escape': e.preventDefault(); closePodcastMode(); break;
+    }
+  });
+
+  // ─── Init ───
+  renderPrefButtons();
+  loadData();
+})();
+</script>
+
+<!-- ── Push Notification (PWA Web Push) ──────────────────────────────── -->
+<script src="/push-notification.js"></script>
+
+</body>
+</html>

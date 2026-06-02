@@ -599,7 +599,7 @@ _EN_FALLBACK_ARTICLES = [
 
 def _load_articles_from_output(lang: str = 'zh') -> list[dict]:
     """从管线 output.json 加载文章，支持语言过滤"""
-    output_dir = '/tmp/ai_morning_brief'
+    output_dir = os.path.join(os.path.dirname(__file__), 'pipeline')
     
     # 根据语言选择不同的 JSON 文件
     if lang == 'en':
@@ -748,7 +748,7 @@ def get_articles():
     
     # 也返回 headline 信息
     headline = {}
-    output_json_path = '/tmp/ai_morning_brief/output.json'
+    output_json_path = os.path.join(BASE_DIR, 'pipeline', 'output.json')
     if os.path.exists(output_json_path):
         try:
             with open(output_json_path, 'r', encoding='utf-8') as f:
@@ -778,7 +778,7 @@ def get_articles():
 @app.route('/topic', methods=['GET'])
 def topic_page():
     """动态专题页面"""
-    output_json_path = '/tmp/ai_morning_brief/output.json'
+    output_json_path = os.path.join(BASE_DIR, 'pipeline', 'output.json')
     articles = []
 
     if os.path.exists(output_json_path):

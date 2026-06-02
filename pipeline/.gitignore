@@ -1,0 +1,15 @@
+data.db
+.env
+__pycache__/
+*.pyc
+output*.json
+output*.md
+output*.html
+output_yt_*.html
+cover.png
+cover_placeholder.png
+*.mp3
+poller_state.json
+voice_uploads/
+voices/
+deepseek_raw_*.json

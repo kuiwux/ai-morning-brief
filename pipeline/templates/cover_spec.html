@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>封面图规范 · 硅谷AI晨报</title>
+<style>
+  body { font-family: -apple-system, sans-serif; margin: 20px; background: #f5f5f5; }
+  .spec { max-width: 700px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; }
+  .spec-header { background: #5C3317; color: #F5DEB3; padding: 16px 24px; }
+  .spec-header h2 { margin: 0; font-family: 'Songti SC', serif; font-size: 20px; }
+  .spec-body { padding: 24px; }
+  h3 { color: #8B4513; border-left: 4px solid #D2691E; padding-left: 10px; margin: 20px 0 12px; font-size: 15px; }
+  h3:first-of-type { margin-top: 0; }
+  .cover-preview { background: #2a2a2a; padding: 20px; text-align: center; border-radius: 4px; margin: 12px 0; }
+  .cover-frame { display: inline-block; position: relative; }
+  .cover-label { font-size: 10px; color: #999; margin-top: 4px; }
+  table.spec-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+  table.spec-table th { background: #FAF5EF; color: #8B4513; padding: 8px 12px; text-align: left; border: 1px solid #E8D5B7; }
+  table.spec-table td { padding: 8px 12px; border: 1px solid #E8D5B7; vertical-align: top; }
+  code { background: #FFF7ED; padding: 1px 5px; border-radius: 2px; font-size: 12px; color: #8B4513; }
+  .note { background: #FFF9F0; border-left: 4px solid #E8A650; padding: 10px 14px; margin: 12px 0; font-size: 13px; color: #5C4A3A; }
+</style>
+</head>
+<body>
+
+<div class="spec">
+<div class="spec-header">
+  <h2>🖼 硅谷AI晨报 · 公众号封面图规范 v1.0</h2>
+</div>
+<div class="spec-body">
+
+<h3>1. 尺寸规范</h3>
+<table class="spec-table">
+<tr>
+  <th>用途</th><th>尺寸 (px)</th><th>比例</th><th>文件格式</th><th>最大体积</th>
+</tr>
+<tr>
+  <td><strong>主封面图</strong>（头条封面）</td>
+  <td><code>900 × 500</code></td>
+  <td>9:5</td>
+  <td>JPG / PNG</td>
+  <td>≤ 10 MB</td>
+</tr>
+<tr>
+  <td><strong>小封面图</strong>（次条/列表缩略图）</td>
+  <td><code>200 × 200</code></td>
+  <td>1:1</td>
+  <td>JPG / PNG</td>
+  <td>≤ 2 MB</td>
+</tr>
+<tr>
+  <td><strong>ELI5 推送封面</strong></td>
+  <td><code>900 × 500</code></td>
+  <td>9:5</td>
+  <td>JPG / PNG</td>
+  <td>≤ 10 MB</td>
+</tr>
+<tr>
+  <td><strong>专题推送封面</strong></td>
+  <td><code>900 × 500</code></td>
+  <td>9:5</td>
+  <td>JPG / PNG</td>
+  <td>≤ 10 MB</td>
+</tr>
+</table>
+
+<div class="note">
+  <strong>⚠ 微信裁剪规则：</strong>900×500 的主封面图在公众号推送列表中会被裁剪为 500×500 方形展示。
+  关键视觉元素（标题文字、Logo、核心图形）必须放在中间 <strong>500×500</strong> 安全区域内。
+</div>
+
+<h3>2. 安全区域（900×500 主图）</h3>
+
+<div class="cover-preview">
+  <svg width="360" height="200" style="background:#3C2415;display:block;margin:0 auto;">
+    <!-- 外框 = 900x500 实际尺寸 -->
+    <rect x="0" y="0" width="360" height="200" fill="none" stroke="#8B6914" stroke-width="1" stroke-dasharray="4,2"/>
+    <text x="180" y="195" fill="#8B6914" font-size="8" text-anchor="middle">900×500 实际区域</text>
+
+    <!-- 安全区 = 500x500 裁剪后可见 -->
+    <rect x="80" y="0" width="200" height="200" fill="rgba(210,105,30,0.15)" stroke="#D2691E" stroke-width="1.5"/>
+    <text x="180" y="15" fill="#F5DEB3" font-size="9" text-anchor="middle" font-weight="bold">安全区域 500×500</text>
+    <text x="180" y="105" fill="#F5DEB3" font-size="8" text-anchor="middle">LOGO / 标题 / 关键图形</text>
+
+    <!-- 左右裁剪区标签 -->
+    <text x="40" y="105" fill="#888" font-size="7" text-anchor="middle">被裁</text>
+    <text x="320" y="105" fill="#888" font-size="7" text-anchor="middle">被裁</text>
+  </svg>
+</div>
+
+<h3>3. 设计模板（CSS 描述）</h3>
+
+<p style="font-size:13px;color:#6B5B4F;">
+  以下是封面图的设计布局描述，可用于 Figma/Canva 设计或程序化生成：
+</p>
+
+<table class="spec-table">
+<tr><th style="width:120px;">设计元素</th><th>规范</th></tr>
+<tr>
+  <td><strong>背景</strong></td>
+  <td>
+    渐变：<code>linear-gradient(135deg, #3C2415 0%, #5C3317 40%, #8B4513 100%)</code><br>
+    替代方案：报纸纹理底图 + 半透明暖色叠加层
+  </td>
+</tr>
+<tr>
+  <td><strong>刊头文字</strong></td>
+  <td>
+    「硅谷AI晨报」<br>
+    字体：宋体 / Songti SC / SimSun<br>
+    字号：72px（900px 画布中）<br>
+    颜色：<code>#F5DEB3</code>（小麦色）<br>
+    字间距：8px<br>
+    位置：水平居中，垂直偏上 30%（y≈150）
+  </td>
+</tr>
+<tr>
+  <td><strong>英文副标题</strong></td>
+  <td>
+    「Silicon Valley AI Morning Brief」<br>
+    字号：18px，颜色 <code>#C8A882</code>，字间距 4px<br>
+    位于中文标题下方 12px
+  </td>
+</tr>
+<tr>
+  <td><strong>日期水印</strong></td>
+  <td>
+    「2026.05.29」<br>
+    字号：16px，颜色 <code>#A68A6B</code><br>
+    位置：右下角，距边缘 24px
+  </td>
+</tr>
+<tr>
+  <td><strong>装饰元素</strong></td>
+  <td>
+    顶部/底部装饰线：2px 实线，颜色 <code>#D2691E</code><br>
+    可选：抽象 AI 图形（神经网络节点、芯片纹理）半透明叠加<br>
+    可选：当天重要性 ≥ 4 的新闻关键词小字环绕
+  </td>
+</tr>
+<tr>
+  <td><strong>特殊：重大事件封面</strong></td>
+  <td>
+    当 <code>is_major_event = true</code> 时，在标题下方增加红色腰封：<br>
+    「重大消息」标签：背景 <code>#CC3333</code>，白色字，字号 24px，居中文案为专题标题
+  </td>
+</tr>
+</table>
+
+<h3>4. 200×200 小图规范</h3>
+
+<table class="spec-table">
+<tr><th style="width:120px;">设计元素</th><th>规范</th></tr>
+<tr>
+  <td><strong>背景</strong></td>
+  <td>与主图一致：<code>linear-gradient(135deg, #3C2415, #5C3317, #8B4513)</code></td>
+</tr>
+<tr>
+  <td><strong>文字</strong></td>
+  <td>
+    「AI晨报」<br>
+    字体：宋体，32px，<code>#F5DEB3</code>，居中
+  </td>
+</tr>
+<tr>
+  <td><strong>装饰</strong></td>
+  <td>四角 1px 边框线，颜色 <code>#D2691E</code>，距边缘 8px</td>
+</tr>
+</table>
+
+<h3>5. 封面图生成优先级</h3>
+
+<table class="spec-table">
+<tr><th>优先级</th><th>场景</th><th>封面策略</th></tr>
+<tr>
+  <td>🥇 最高</td>
+  <td><code>curated_topics</code> 非空 + <code>is_major_event = true</code></td>
+  <td>AI 生成专题封面（DeepSeek 提供 Prompt → 图生成模型），带红色「重大消息」腰封</td>
+</tr>
+<tr>
+  <td>🥈 次高</td>
+  <td><code>importance_score ≥ 4</code> 的文章存在</td>
+  <td>使用最高分文章的 <code>og:image</code> 作为底图，叠加品牌刊头</td>
+</tr>
+<tr>
+  <td>🥉 默认</td>
+  <td>其他所有情况</td>
+  <td>使用品牌默认封面（每日日期自动叠加），模板化生成</td>
+</tr>
+</table>
+
+<h3>6. CSS 生成示例（用于程序化渲染）</h3>
+
+<div style="background:#3C2415;border-radius:4px;overflow:hidden;margin:12px 0;">
+
+  <!-- 模拟 900×500 封面 -->
+  <div style="width:100%;aspect-ratio:9/5;background:linear-gradient(135deg, #3C2415 0%, #5C3317 40%, #8B4513 100%);position:relative;overflow:hidden;max-width:540px;margin:0 auto;">
+
+    <!-- 顶部装饰线 -->
+    <div style="position:absolute;top:24px;left:24px;right:24px;height:2px;background:#D2691E;opacity:0.6;"></div>
+
+    <!-- 装饰圆点 -->
+    <div style="position:absolute;top:40px;right:60px;width:120px;height:120px;border:1px solid rgba(210,105,30,0.15);border-radius:50%;"></div>
+    <div style="position:absolute;bottom:50px;left:40px;width:80px;height:80px;border:1px solid rgba(210,105,30,0.1);border-radius:50%;"></div>
+
+    <!-- 主标题区 -->
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-58%);text-align:center;width:100%;">
+      <div style="font-family:'Songti SC','SimSun',serif;font-size:36px;font-weight:700;color:#F5DEB3;letter-spacing:6px;text-shadow:0 2px 8px rgba(0,0,0,0.3);">
+        硅谷AI晨报
+      </div>
+      <div style="font-size:10px;color:#C8A882;letter-spacing:3px;margin-top:6px;">
+        SILICON VALLEY AI MORNING BRIEF
+      </div>
+    </div>
+
+    <!-- 日期水印 -->
+    <div style="position:absolute;bottom:18px;right:18px;font-size:10px;color:#A68A6B;letter-spacing:2px;">
+      2026.05.29
+    </div>
+
+    <!-- 底部装饰线 -->
+    <div style="position:absolute;bottom:24px;left:24px;right:24px;height:2px;background:#D2691E;opacity:0.6;"></div>
+
+    <!-- 安全区指示（设计辅助，实际发布去除） -->
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:56%;height:100%;border-left:1px dashed rgba(255,255,255,0.1);border-right:1px dashed rgba(255,255,255,0.1);"></div>
+
+  </div>
+
+</div>
+
+<p style="font-size:11px;color:#A68A6B;text-align:center;">▲ 900×500 封面 CSS 渲染预览（关键内容位于中间 500×500 安全区）</p>
+
+<h3>7. 图片优化清单</h3>
+
+<table class="spec-table">
+<tr><th>优化项</th><th>参数</th><th>工具</th></tr>
+<tr><td>JPG 压缩质量</td><td>80-85%</td><td>Sharp / ImageMagick</td></tr>
+<tr><td>PNG 色深缩减</td><td>调色板模式, 256 色</td><td>pngquant</td></tr>
+<tr><td>WebP 转换（可选）</td><td>质量 80%</td><td>cwebp</td></tr>
+<tr><td>CDN 上传</td><td>七牛云 / 腾讯云 COS</td><td>SDK 自动上传</td></tr>
+<tr><td>尺寸校验</td><td>900×500 / 200×200 严格</td><td>Sharp resize + crop</td></tr>
+</table>
+
+</div>
+</div>
+
+</body>
+</html>

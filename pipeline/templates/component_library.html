@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>组件库 · 硅谷AI晨报</title>
+<!-- 
+  ============================================================
+  硅谷AI晨报 · 公众号排版组件库 v1.0
+  所有组件均为纯内联样式、table 布局，可直接复制粘贴使用。
+  组件命名与架构文档中的数据结构一一对应。
+  ============================================================
+-->
+<style>
+  /* 仅本地预览用，发布到微信时需通过 CSS 内联工具（Juice/Premailer）处理 */
+  body { font-family: -apple-system, sans-serif; margin: 20px; background: #f5f5f5; }
+  .comp-wrapper { background: #fff; max-width: 600px; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+  .comp-label { background: #333; color: #fff; padding: 6px 14px; font-size: 12px; font-weight: 700; font-family: monospace; }
+  .comp-body { padding: 0; }
+</style>
+</head>
+<body>
+
+<h2 style="text-align:center;color:#333;">🧩 硅谷AI晨报 · 公众号组件库 v1.0</h2>
+<p style="text-align:center;color:#888;font-size:13px;">暖色报纸风 · 纯内联样式 · Table 布局 · 微信兼容</p>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件1：元数据行                                           -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">📋 组件1 · 元数据行（metadata-row）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:16px 20px 10px 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <!-- 日期 -->
+      <td align="left" style="font-size:13px;color:#A68A6B;letter-spacing:1px;">
+        📅 2026年5月29日 星期五
+      </td>
+      <!-- 来源数 & 阅读时长 -->
+      <td align="right" style="font-size:13px;color:#A68A6B;letter-spacing:1px;">
+        📰 5 数据源 · ⏱ 8 分钟阅读
+      </td>
+    </tr>
+    </table>
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件2：报纸刊头                                            -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">📰 组件2 · 报纸刊头（masthead）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:18px 20px 14px 20px;text-align:center;">
+    <h1 style="margin:0;font-family:'Songti SC','SimSun','STSong',serif;font-size:24px;font-weight:700;color:#5C3317;letter-spacing:3px;line-height:1.5;">
+      硅谷AI晨报
+    </h1>
+    <p style="margin:6px 0 0 0;font-size:13px;color:#A68A6B;letter-spacing:2px;">
+      Silicon Valley AI Morning Brief
+    </p>
+  </td>
+</tr>
+<!-- 双线装饰 -->
+<tr>
+  <td style="padding:0 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td style="border-top:1px solid #C8A882;"></td></tr>
+    <tr><td style="height:3px;"></td></tr>
+    <tr><td style="border-top:3px solid #8B6914;"></td></tr>
+    </table>
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件3：板块标签                                            -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">🏷 组件3 · 板块标签（section-label）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:12px 20px;">
+    <!-- 头条标签 -->
+    <span style="display:inline-block;background-color:#8B4513;color:#FFFFFF;font-size:12px;font-weight:700;padding:3px 12px;border-radius:2px;letter-spacing:2px;margin-right:8px;">
+      今 日 头 条
+    </span>
+    <!-- 快讯标签 -->
+    <span style="display:inline-block;background-color:#8B6914;color:#FFFFFF;font-size:12px;font-weight:700;padding:3px 12px;border-radius:2px;letter-spacing:2px;margin-right:8px;">
+      AI 快 讯
+    </span>
+    <!-- ELI5 标签 -->
+    <span style="display:inline-block;background-color:#D2691E;color:#FFFFFF;font-size:12px;font-weight:700;padding:3px 12px;border-radius:2px;letter-spacing:2px;margin-right:8px;">
+      💡 今日 ELI5
+    </span>
+    <!-- 专题标签（反色） -->
+    <span style="display:inline-block;background-color:#5C3317;color:#F5DEB3;font-size:12px;font-weight:700;padding:3px 12px;border-radius:2px;letter-spacing:2px;">
+      📖 编辑精选专题
+    </span>
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件4：头条卡片                                            -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">⭐ 组件4 · 头条卡片（headline-card）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:16px 20px;">
+    
+    <!-- 板块标签 -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td>
+        <span style="display:inline-block;background-color:#8B4513;color:#FFFFFF;font-size:12px;font-weight:700;padding:3px 12px;border-radius:2px;letter-spacing:2px;margin-bottom:12px;">
+          今 日 头 条
+        </span>
+      </td>
+    </tr>
+    </table>
+
+    <!-- 卡片容器 -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFF7ED;border:1px solid #E8D5B7;border-radius:4px;">
+    <tr>
+      <td style="padding:16px;">
+        <h2 style="margin:0 0 10px 0;font-family:'Songti SC','SimSun',serif;font-size:18px;font-weight:700;color:#5C3317;line-height:1.5;">
+          OpenAI 正式发布 GPT-5，原生多模态能力全面亮相
+        </h2>
+        <p style="margin:0 0 12px 0;font-size:15px;color:#5C4A3A;line-height:1.8;text-align:justify;">
+          OpenAI 今日凌晨正式发布 GPT-5，首次实现文本、图像、音频的原生多模态融合。
+        </p>
+        <p style="margin:0;font-size:12px;color:#A68A6B;line-height:1.6;">
+          📰 <a href="#" style="color:#8B6914;text-decoration:none;">TechCrunch</a> · <a href="#" style="color:#8B6914;text-decoration:none;">The Verge</a> — 联合报道
+        </p>
+      </td>
+    </tr>
+    </table>
+
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件5：简讯条目                                            -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">📝 组件5 · 简讯条目（brief-item）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:12px 20px;">
+
+    <!-- 单条简讯 -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
+    <tr>
+      <td style="vertical-align:top;width:18px;font-size:14px;color:#C8A882;padding-top:2px;">▸</td>
+      <td style="padding-left:6px;">
+        <!-- 标题 -->
+        <p style="margin:0;font-size:14px;font-weight:600;color:#5C3317;line-height:1.7;">
+          Anthropic 发布 Claude 4，上下文窗口扩展至 500K tokens
+        </p>
+        <!-- 摘要 -->
+        <p style="margin:4px 0 0 0;font-size:13px;color:#6B5B4F;line-height:1.7;">
+          新模型在长文档理解任务上刷新纪录，同时推出「宪法 AI 3.0」对齐框架。
+        </p>
+        <!-- 来源 -->
+        <p style="margin:4px 0 0 0;font-size:11px;color:#A68A6B;">
+          📰 <a href="#" style="color:#A68A6B;text-decoration:none;">The Information</a> · <a href="#" style="color:#A68A6B;text-decoration:none;">Reuters</a> — 联合报道
+        </p>
+      </td>
+    </tr>
+    </table>
+
+    <!-- 第二条（演示列表连接） -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td style="vertical-align:top;width:18px;font-size:14px;color:#C8A882;padding-top:2px;">▸</td>
+      <td style="padding-left:6px;">
+        <p style="margin:0;font-size:14px;font-weight:600;color:#5C3317;line-height:1.7;">
+          Meta 开源 Llama 4 系列：70B 参数版本性能对标 GPT-4o
+        </p>
+        <p style="margin:4px 0 0 0;font-size:13px;color:#6B5B4F;line-height:1.7;">
+          Llama 4 70B 在多项基准上接近闭源模型水平，社区反响热烈。
+        </p>
+        <p style="margin:4px 0 0 0;font-size:11px;color:#A68A6B;">
+          📰 <a href="#" style="color:#A68A6B;text-decoration:none;">Meta AI Blog</a> — 独家
+        </p>
+      </td>
+    </tr>
+    </table>
+
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件6：主题分组容器（含标题）                              -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">📂 组件6 · 主题分组（topic-group）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:12px 20px;border-bottom:1px dashed #E0D0B8;">
+
+    <!-- 主题标签 -->
+    <p style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#8B4513;">
+      🤖 大模型
+    </p>
+    
+    <!-- 嵌套简讯条目（组件5） -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+    <tr>
+      <td style="vertical-align:top;width:18px;font-size:14px;color:#C8A882;padding-top:2px;">▸</td>
+      <td style="padding-left:6px;">
+        <p style="margin:0;font-size:14px;font-weight:600;color:#5C3317;line-height:1.7;">
+          GPT-5 发布，原生多模态能力亮相
+        </p>
+        <p style="margin:4px 0 0 0;font-size:13px;color:#6B5B4F;line-height:1.7;">
+          首次实现文本、图像、音频原生融合，性能大幅提升。
+        </p>
+        <p style="margin:4px 0 0 0;font-size:11px;color:#A68A6B;">
+          📰 <a href="#" style="color:#A68A6B;text-decoration:none;">TechCrunch</a> · <a href="#" style="color:#A68A6B;text-decoration:none;">The Verge</a> — 联合报道
+        </p>
+      </td>
+    </tr>
+    </table>
+
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件7：ELI5 块                                            -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">💡 组件7 · ELI5 块（eli5-block）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:14px 20px;">
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFF9F0;border-left:4px solid #E8A650;margin-bottom:14px;border-radius:0 4px 4px 0;">
+    <tr>
+      <td style="padding:14px 16px;">
+        <!-- ELI5 标题 -->
+        <p style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#8B4513;">
+          🧠 GPT-5 的原生多模态是什么？
+        </p>
+        <!-- ELI5 正文 -->
+        <p style="margin:0 0 8px 0;font-size:14px;color:#5C4A3A;line-height:1.8;">
+          想象一下，你同时用眼睛看、用耳朵听、用嘴巴说——这就是 GPT-5 的「多模态」。
+          以前的 AI 像一个只能看文字的盲人，现在的 GPT-5 像一个五官健全的人。
+        </p>
+        <!-- 为什么重要 -->
+        <p style="margin:0;font-size:12px;color:#C8862A;font-weight:600;">
+          💡 为什么重要：AI 从「工具」变成了「伙伴」，在感知世界的方式上更接近人类。
+        </p>
+      </td>
+    </tr>
+    </table>
+
+    <!-- 第二条 ELI5（演示多条） -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFF9F0;border-left:4px solid #E8A650;border-radius:0 4px 4px 0;">
+    <tr>
+      <td style="padding:14px 16px;">
+        <p style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#8B4513;">
+          🔓 Llama 4 开源意味着什么？
+        </p>
+        <p style="margin:0 0 8px 0;font-size:14px;color:#5C4A3A;line-height:1.8;">
+          这就像可口可乐突然公布了它的秘密配方——任何人都可以自己在家做可乐了。开源正在让 AI 从「奢侈品」变成「日用品」。
+        </p>
+        <p style="margin:0;font-size:12px;color:#C8862A;font-weight:600;">
+          💡 为什么重要：整个行业的创新速度会被重新定义。
+        </p>
+      </td>
+    </tr>
+    </table>
+
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件8：来源标注行                                          -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">📎 组件8 · 来源标注行（source-line）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:12px 20px;">
+
+    <!-- 联合报道 -->
+    <p style="margin:0 0 8px 0;font-size:12px;color:#A68A6B;line-height:1.6;">
+      📰 <a href="#" style="color:#8B6914;text-decoration:none;">TechCrunch</a> · <a href="#" style="color:#8B6914;text-decoration:none;">The Verge</a> · <a href="#" style="color:#8B6914;text-decoration:none;">VentureBeat</a> — 联合报道
+    </p>
+
+    <!-- 独家报道 -->
+    <p style="margin:0 0 8px 0;font-size:12px;color:#A68A6B;line-height:1.6;">
+      📰 <a href="#" style="color:#8B6914;text-decoration:none;">Bloomberg</a> — 独家报道
+    </p>
+
+    <!-- 转载（无链接时） -->
+    <p style="margin:0;font-size:12px;color:#B0A090;line-height:1.6;">
+      📰 来源：TechCrunch（原文需订阅）
+    </p>
+
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件9：专题入口卡片                                        -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">📖 组件9 · 专题入口卡片（topic-entry-card）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:18px 20px;">
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(135deg, #FFF7ED 0%, #FFF0E0 100%);border:1px solid #E0C8A0;border-radius:6px;">
+    <tr>
+      <td style="padding:18px;">
+
+        <!-- 封面图 -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding-bottom:12px;">
+            <img src="https://your-cdn.com/covers/topic_gpt5.jpg" alt="" width="560" height="200" style="display:block;width:100%;height:auto;border-radius:3px;border:0;">
+          </td>
+        </tr>
+        </table>
+
+        <!-- 标题 -->
+        <h3 style="margin:0 0 8px 0;font-family:'Songti SC','SimSun',serif;font-size:16px;font-weight:700;color:#5C3317;line-height:1.5;">
+          🔥 GPT-5 时代开启：AI 行业的「iPhone 时刻」？
+        </h3>
+
+        <!-- 摘要 -->
+        <p style="margin:0 0 12px 0;font-size:13px;color:#6B5B4F;line-height:1.8;">
+          从 OpenAI 的技术突破到行业全面跟进，解析 2026 年 5 月的 AI 变革。
+        </p>
+
+        <!-- 元信息 -->
+        <p style="margin:0;font-size:11px;color:#A68A6B;">
+          📊 收录 6 篇深度报道 · ⏱ 约 15 分钟 · 📰 4 个独立来源
+        </p>
+
+        <!-- CTA -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding-top:12px;text-align:center;">
+            <a href="#" style="display:inline-block;background-color:#8B4513;color:#FFFFFF;font-size:13px;font-weight:600;text-decoration:none;padding:8px 32px;border-radius:3px;letter-spacing:1px;">
+              查看完整专题 →
+            </a>
+          </td>
+        </tr>
+        </table>
+
+      </td>
+    </tr>
+    </table>
+
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件10：分割线（3种样式）                                  -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">✂ 组件10 · 分割线（divider）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:12px 20px;">
+
+    <!-- 样式A：细线 -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
+    <tr><td style="border-top:1px solid #E0D0B8;"></td></tr>
+    </table>
+
+    <!-- 样式B：粗线 -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
+    <tr><td style="border-top:2px solid #C8A882;"></td></tr>
+    </table>
+
+    <!-- 样式C：双线（报纸风） -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
+    <tr><td style="border-top:1px solid #C8A882;"></td></tr>
+    <tr><td style="height:3px;"></td></tr>
+    <tr><td style="border-top:3px solid #8B6914;"></td></tr>
+    </table>
+
+    <!-- 样式D：虚线分隔 -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
+    <tr><td style="border-top:1px dashed #E0D0B8;"></td></tr>
+    </table>
+
+    <!-- 样式E：Emoji 装饰 -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td style="text-align:center;font-size:12px;color:#C8A882;letter-spacing:6px;padding:8px 0;">
+        ✦ ✦ ✦
+      </td>
+    </tr>
+    </table>
+
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件11：数据概览面板                                       -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">📊 组件11 · 数据概览面板（stats-panel）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:16px 20px;">
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FAF5EF;border:1px solid #E8D5B7;border-radius:4px;">
+    <tr>
+      <td style="padding:14px 16px;text-align:center;">
+        
+        <p style="margin:0 0 6px 0;font-size:13px;font-weight:700;color:#8B6914;">
+          📊 今日数据一览
+        </p>
+        
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td width="33%" align="center" style="padding:4px 0;">
+            <p style="margin:0;font-size:18px;font-weight:700;color:#8B4513;">42</p>
+            <p style="margin:0;font-size:11px;color:#A68A6B;">收录文章</p>
+          </td>
+          <td width="33%" align="center" style="padding:4px 0;">
+            <p style="margin:0;font-size:18px;font-weight:700;color:#8B4513;">5</p>
+            <p style="margin:0;font-size:11px;color:#A68A6B;">数据来源</p>
+          </td>
+          <td width="33%" align="center" style="padding:4px 0;">
+            <p style="margin:0;font-size:18px;font-weight:700;color:#D2691E;">⭐⭐⭐⭐</p>
+            <p style="margin:0;font-size:11px;color:#A68A6B;">重要指数</p>
+          </td>
+        </tr>
+        </table>
+
+      </td>
+    </tr>
+    </table>
+
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- 组件12：页脚 / 关注引导                                    -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="comp-wrapper">
+<div class="comp-label">📌 组件12 · 页脚关注引导（footer-cta）</div>
+<div class="comp-body">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF8;">
+<tr>
+  <td style="padding:0 20px 28px 20px;">
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td style="border-top:3px solid #8B6914;padding-top:16px;text-align:center;">
+        
+        <p style="margin:0 0 8px 0;font-size:13px;color:#5C4A3A;line-height:1.6;">
+          <strong>硅谷AI晨报</strong> · 每天早上 8:00 准时推送
+        </p>
+        <p style="margin:0 0 12px 0;font-size:12px;color:#A68A6B;line-height:1.6;">
+          立足硅谷，放眼全球 · 5 大数据源，AI 资讯先睹为快
+        </p>
+
+        <!-- 订阅引导框 -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFF7ED;border:1px dashed #E8D5B7;border-radius:4px;">
+        <tr>
+          <td style="padding:12px;text-align:center;">
+            <p style="margin:0 0 4px 0;font-size:12px;color:#5C4A3A;">
+              💬 回复关键词订阅你关心的话题
+            </p>
+            <p style="margin:0;font-size:11px;color:#A68A6B;line-height:1.6;">
+              如「<strong>订阅LLM</strong>」「<strong>订阅算力</strong>」「<strong>订阅融资</strong>」
+            </p>
+            <p style="margin:4px 0 0 0;font-size:10px;color:#C8A882;">
+              回复「<strong>帮助</strong>」查看完整关键词列表
+            </p>
+          </td>
+        </tr>
+        </table>
+
+        <p style="margin:12px 0 0 0;font-size:10px;color:#C8A882;">
+          © 2026 秋山梦团队 · 硅谷AI晨报
+        </p>
+
+      </td>
+    </tr>
+    </table>
+
+  </td>
+</tr>
+</table>
+
+</div>
+</div>
+
+</body>
+</html>
