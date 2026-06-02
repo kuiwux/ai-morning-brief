@@ -1884,71 +1884,85 @@ def main():
         logger.warning(f"⚠️ 公众号 HTML 渲染失败（不影响主流程）: {e}")
         wechat_output = None
 
-    # ---- 第五步：创建微信公众号草稿 ----
-    try:
-        import wechat_api
+    # ---- 第五步：创建微信公众号草稿（仅在已配置时执行） ----
+    weixin_configured = bool(os.environ.get("WEIXIN_APPID", ""))
+    if not weixin_configured:
+        # 也检查 pipeline/.env
+        env_file = os.path.join(WORKDIR, ".env")
+        if os.path.exists(env_file):
+            with open(env_file, "r") as f:
+                for line in f:
+                    if line.strip().startswith("WEIXIN_APPID="):
+                        weixin_configured = True
+                        break
 
-        # 确定 HTML 文件路径（优先用刚渲染的，否则找已有的）
-        html_path = wechat_output or os.path.join(WORKDIR, "output_wechat.html")
-        if not os.path.exists(html_path):
-            # 回退到日期化路径
-            html_path = os.path.join(WORKDIR, f"output_wechat.html")
+    if weixin_configured:
+        try:
+            import wechat_api
+
+            # 确定 HTML 文件路径（优先用刚渲染的，否则找已有的）
+            html_path = wechat_output or os.path.join(WORKDIR, "output_wechat.html")
             if not os.path.exists(html_path):
-                logger.warning("⚠️ 未找到公众号 HTML 文件，跳过草稿创建")
-                html_path = None
+                # 回退到日期化路径
+                html_path = os.path.join(WORKDIR, f"output_wechat.html")
+                if not os.path.exists(html_path):
+                    logger.warning("⚠️ 未找到公众号 HTML 文件，跳过草稿创建")
+                    html_path = None
 
-        if html_path:
-            with open(html_path, "r", encoding="utf-8") as f:
-                html_content = f.read()
+            if html_path:
+                with open(html_path, "r", encoding="utf-8") as f:
+                    html_content = f.read()
 
-            # 获取 access_token
-            token = wechat_api.get_access_token()
+                # 获取 access_token
+                token = wechat_api.get_access_token()
 
-            # 生成封面图（用头条人物/公司名）
-            thumb_media_id = None
-            try:
-                import cover_gen
-                headline_title = ""
-                if isinstance(data.get("headline"), dict):
-                    headline_title = data["headline"].get("title", "")
-                date_cn = data.get("date", "")
-                cover_path = cover_gen.generate_cover(headline_title, date_cn)
-                thumb_media_id = wechat_api.upload_cover(token, cover_path)
-            except Exception as e:
-                logger.warning(f"⚠️ 封面上传跳过: {e}")
+                # 生成封面图（用头条人物/公司名）
+                thumb_media_id = None
+                try:
+                    import cover_gen
+                    headline_title = ""
+                    if isinstance(data.get("headline"), dict):
+                        headline_title = data["headline"].get("title", "")
+                    date_cn = data.get("date", "")
+                    cover_path = cover_gen.generate_cover(headline_title, date_cn)
+                    thumb_media_id = wechat_api.upload_cover(token, cover_path)
+                except Exception as e:
+                    logger.warning(f"⚠️ 封面上传跳过: {e}")
 
-            # 从 data 中提取头条标题作为草稿标题
-            headline = data.get("headline", {})
-            if isinstance(headline, dict):
-                draft_title = headline.get("title", "") or headline.get("summary", "")[:30]
-            else:
-                draft_title = str(headline)[:30] if headline else ""
-            if not draft_title:
-                draft_title = "硅谷AI晨报"
+                # 从 data 中提取头条标题作为草稿标题
+                headline = data.get("headline", {})
+                if isinstance(headline, dict):
+                    draft_title = headline.get("title", "") or headline.get("summary", "")[:30]
+                else:
+                    draft_title = str(headline)[:30] if headline else ""
+                if not draft_title:
+                    draft_title = "硅谷AI晨报"
 
-            # 摘要：从头条 summary 截取
-            digest_text = ""
-            if isinstance(headline, dict):
-                digest_text = headline.get("summary", "")[:54]
-            elif headline:
-                digest_text = str(headline)[:54]
+                # 摘要：从头条 summary 截取
+                digest_text = ""
+                if isinstance(headline, dict):
+                    digest_text = headline.get("summary", "")[:54]
+                elif headline:
+                    digest_text = str(headline)[:54]
 
-            draft_id = wechat_api.create_draft(
-                token,
-                html_content,
-                title=draft_title,
-                thumb_media_id=thumb_media_id,
-                digest=digest_text,
-            )
+                draft_id = wechat_api.create_draft(
+                    token,
+                    html_content,
+                    title=draft_title,
+                    thumb_media_id=thumb_media_id,
+                    digest=digest_text,
+                )
 
-            if draft_id:
-                logger.info(f"✅ 微信草稿已创建: draft_id={draft_id}")
-                # 自动发布
-                wechat_api.publish_draft(token, draft_id)
-            else:
-                logger.warning("⚠️ 微信草稿创建失败（可能权限不足或接口限制）")
-    except Exception as e:
-        logger.warning(f"⚠️ 微信草稿创建失败（不影响主流程）: {e}")
+                if draft_id:
+                    logger.info(f"✅ 微信草稿已创建: draft_id={draft_id}")
+                    # 自动发布
+                    wechat_api.publish_draft(token, draft_id)
+                else:
+                    logger.warning("⚠️ 微信草稿创建失败（可能权限不足或接口限制）")
+        except Exception as e:
+            logger.warning(f"⚠️ 微信草稿创建失败（不影响主流程）: {e}")
+    else:
+        logger.info("⏭️ WEIXIN_APPID 未配置，跳过公众号草稿创建")
 
     # ---- 第六步：生成语音日报 ----
     try:

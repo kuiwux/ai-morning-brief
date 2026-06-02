@@ -1272,6 +1272,226 @@ body {{
 
 
 # =====================================================================
+#  公众号发布 API（管理员功能）
+# =====================================================================
+
+# 管理员邮箱列表（环境变量 ADMIN_EMAILS，逗号分隔）
+_ADMIN_EMAILS = set(
+    e.strip().lower()
+    for e in os.environ.get('ADMIN_EMAILS', '').split(',')
+    if e.strip()
+)
+
+
+def _is_admin() -> bool:
+    """检查当前登录用户是否为管理员"""
+    user_id = getattr(g, 'current_user_id', None)
+    if not user_id:
+        return False
+
+    conn = get_db()
+    try:
+        user = conn.execute(
+            "SELECT id, username, email, is_demo FROM users WHERE id = ?",
+            (user_id,)
+        ).fetchone()
+
+        if not user:
+            return False
+
+        # 演示账号不能操作
+        if user['is_demo']:
+            return False
+
+        # 检查是否在管理员邮箱列表中
+        email = (user.get('email') or user.get('username') or '').strip().lower()
+        if email and _ADMIN_EMAILS and email in _ADMIN_EMAILS:
+            return True
+
+        # 如果没有配置 ADMIN_EMAILS，则允许所有非演示用户（开发模式）
+        if not _ADMIN_EMAILS:
+            return True
+
+        return False
+    finally:
+        conn.close()
+
+
+def admin_required(f):
+    """装饰器：要求管理员权限"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not _is_admin():
+            return jsonify({
+                'error': '需要管理员权限',
+                'code': 'ADMIN_REQUIRED'
+            }), 403
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route('/api/admin/wechat/publish', methods=['POST'])
+@login_required
+@admin_required
+def wechat_publish():
+    """
+    手动发布日报到微信公众号草稿箱
+    POST /api/admin/wechat/publish
+    Header: Authorization: Bearer ***
+    需要管理员权限
+
+    读取 pipeline/output_wechat.html 的内容，
+    上传封面图，创建草稿，发布到草稿箱。
+    """
+    try:
+        import wechat_api
+        import cover_gen
+    except ImportError as e:
+        return jsonify({
+            'error': f'WeChat 模块加载失败: {str(e)}',
+            'code': 'WECHAT_MODULE_ERROR'
+        }), 500
+
+    # 检查 WEIXIN_APPID 是否已配置
+    appid = os.environ.get('WEIXIN_APPID', '')
+    if not appid:
+        return jsonify({
+            'error': '微信公众号未配置，请设置 WEIXIN_APPID 和 WEIXIN_APPSECRET 环境变量',
+            'code': 'WECHAT_NOT_CONFIGURED'
+        }), 400
+
+    # 读取 output_wechat.html
+    pipeline_dir = os.path.join(BASE_DIR, 'pipeline')
+    html_path = os.path.join(pipeline_dir, 'output_wechat.html')
+    if not os.path.exists(html_path):
+        return jsonify({
+            'error': '公众号 HTML 文件不存在，请先运行管线生成日报',
+            'code': 'HTML_NOT_FOUND',
+            'expected_path': html_path,
+        }), 404
+
+    try:
+        with open(html_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+    except IOError as e:
+        return jsonify({
+            'error': f'读取 HTML 文件失败: {str(e)}',
+            'code': 'HTML_READ_ERROR'
+        }), 500
+
+    if not html_content.strip():
+        return jsonify({
+            'error': 'HTML 文件内容为空',
+            'code': 'HTML_EMPTY'
+        }), 400
+
+    # 读取 output.json 获取头条标题和日期
+    json_path = os.path.join(pipeline_dir, 'output.json')
+    headline_title = ''
+    headline_summary = ''
+    date_str = ''
+    try:
+        if os.path.exists(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            headline = data.get('headline', {})
+            if isinstance(headline, dict):
+                headline_title = headline.get('title', '')
+                headline_summary = headline.get('summary', '')
+            date_str = data.get('date', '')
+    except Exception:
+        pass
+
+    # 获取 access_token
+    try:
+        token = wechat_api.get_access_token()
+    except Exception as e:
+        return jsonify({
+            'error': f'获取微信 access_token 失败: {str(e)}',
+            'code': 'TOKEN_ERROR'
+        }), 500
+
+    # 上传封面图
+    thumb_media_id = None
+    try:
+        cover_path = cover_gen.generate_cover(headline_title, date_str)
+        thumb_media_id = wechat_api.upload_cover(token, cover_path)
+        if thumb_media_id:
+            print(f'[WeChat] 封面图已上传: media_id={thumb_media_id}')
+    except Exception as e:
+        print(f'[WeChat] 封面上传跳过: {e}')
+
+    # 准备标题和摘要
+    draft_title = headline_title or f"硅谷AI晨报 | {date_str or '今日日报'}"
+    digest_text = headline_summary[:54] if headline_summary else ''
+
+    # 创建草稿
+    draft_id = wechat_api.create_draft(
+        token,
+        html_content,
+        title=draft_title,
+        thumb_media_id=thumb_media_id,
+        digest=digest_text,
+    )
+
+    if not draft_id:
+        return jsonify({
+            'error': '微信草稿创建失败，请检查日志',
+            'code': 'DRAFT_CREATE_FAILED'
+        }), 500
+
+    print(f'[WeChat] ✅ 草稿已创建: draft_id={draft_id}')
+
+    # 发布草稿（个人订阅号用 freepublish/submit）
+    published = wechat_api.publish_draft(token, draft_id)
+
+    return jsonify({
+        'message': '发布成功' if published else '草稿已创建，但发布失败（个人订阅号可能需要手动发布）',
+        'draft_id': draft_id,
+        'published': published,
+        'title': draft_title,
+        'thumb_media_id': thumb_media_id,
+    }), 200
+
+
+@app.route('/api/admin/wechat/status', methods=['GET'])
+@login_required
+@admin_required
+def wechat_status():
+    """
+    检查公众号配置状态
+    GET /api/admin/wechat/status
+    """
+    appid = os.environ.get('WEIXIN_APPID', '')
+    configured = bool(appid)
+
+    # 检查 output_wechat.html 是否存在
+    pipeline_dir = os.path.join(BASE_DIR, 'pipeline')
+    html_path = os.path.join(pipeline_dir, 'output_wechat.html')
+    html_exists = os.path.exists(html_path)
+
+    status_data = {
+        'configured': configured,
+        'appid': appid[:8] + '...' if appid else None,
+        'html_ready': html_exists,
+        'html_path': html_path if html_exists else None,
+    }
+
+    # 尝试获取 access_token 验证密钥有效性
+    if configured:
+        try:
+            import wechat_api
+            token = wechat_api.get_access_token()
+            status_data['token_valid'] = True
+            status_data['token_preview'] = token[:10] + '...'
+        except Exception as e:
+            status_data['token_valid'] = False
+            status_data['token_error'] = str(e)
+
+    return jsonify(status_data)
+
+
+# =====================================================================
 #  OPTIONS 预检请求
 # =====================================================================
 
@@ -1319,7 +1539,9 @@ def main():
     print(f"     GET  /api/v2/voice/clones     已克隆语音列表")
     print(f"     DELETE /api/v2/voice/clone/<id> 删除克隆语音")
     print(f"     GET  /api/v2/articles         今日资讯")
-    print(f"\n  ⚠️  按 Ctrl+C 停止服务器\n")
+    print(f"     POST /api/admin/wechat/publish  手动发布到公众号草稿箱（管理员）")
+    print(f"     GET  /api/admin/wechat/status   公众号配置状态（管理员）")
+    print(f"\\n  ⚠️  按 Ctrl+C 停止服务器\\n")
 
     app.run(host='0.0.0.0', port=PORT, debug=False)
 

@@ -1,0 +1,53 @@
+# =============================================================================
+# Parro — 定时任务配置（Cron）
+# =============================================================================
+#
+# 使用 crontab -e 添加以下定时任务：
+#
+# 1. 每天北京时间 6:00 执行管线生成（UTC 22:00）
+#    管线会：抓取新闻 → 翻译汇总 → 渲染公众号 HTML → 自动创建草稿
+#
+# 2. 每天早上 6:30 自动发布已创建的草稿（可选，如：管线已创建草稿但发布失败）
+#
+# =============================================================================
+# 一键安装定时任务：
+#   crontab deploy/cron.txt
+#
+# 查看已安装的定时任务：
+#   crontab -l
+#
+# 删除所有定时任务：
+#   crontab -r
+# =============================================================================
+
+# 设置 PATH 和项目目录
+PROJECT_DIR=/home/kuiwu/ai-morning-brief
+PYTHON_BIN=$(which python3 || echo /usr/bin/python3)
+
+# ─── 每天早上 6:00 执行管线 ───────────────────────────────────────────
+# 北京时间 6:00 = UTC 22:00（前一天）
+# 使用 -1d 参数回退一天，确保抓取的是北京时间当天的数据
+0 22 * * * cd ${PROJECT_DIR}/pipeline && ${PYTHON_BIN} pipeline.py >> ${PROJECT_DIR}/logs/cron_pipeline.log 2>&1
+
+# ─── 备用方案：直接使用北京时间 6:00 ───────────────────────────────────
+# 如果服务器时区已是 CST (Asia/Shanghai)，使用此配置：
+# 0 6 * * * cd /home/kuiwu/ai-morning-brief/pipeline && python3 pipeline.py >> /home/kuiwu/ai-morning-brief/logs/cron_pipeline.log 2>&1
+
+# ─── 每天 6:30 再次尝试发布草稿（兜底管线发布失败的情况）──
+# 30 22 * * * cd ${PROJECT_DIR} && ${PYTHON_BIN} -c "
+# import wechat_api
+# import os, json
+# pipeline_dir = os.path.join('${PROJECT_DIR}', 'pipeline')
+# html_path = os.path.join(pipeline_dir, 'output_wechat.html')
+# if os.path.exists(html_path):
+#     token = wechat_api.get_access_token()
+#     with open(html_path, 'r', encoding='utf-8') as f:
+#         html = f.read()
+#     draft_id = wechat_api.create_draft(token, html)
+#     if draft_id:
+#         wechat_api.publish_draft(token, draft_id)
+# " >> ${PROJECT_DIR}/logs/cron_publish.log 2>&1
+
+# ─── 日志目录 ──────────────────────────────────────────────────────────
+# 确保日志目录存在：
+#   mkdir -p /home/kuiwu/ai-morning-brief/logs
