@@ -15,8 +15,11 @@ Parro（硅谷AI晨报）— Flask 后端服务器
 import json
 import os
 import sys
+import hashlib
+import asyncio
+import concurrent.futures
 
-from flask import Flask, request, jsonify, send_from_directory, g
+from flask import Flask, request, jsonify, send_from_directory, g, Response
 from database import init_db, create_demo_account, get_db
 from auth import login_required, hash_password, verify_password, create_token, decode_token, blacklist_token
 from oauth import google_auth_url, google_auth_callback, apple_auth_callback
@@ -47,9 +50,20 @@ def add_cors_headers(response):
 
 
 # ===== 数据库初始化 =====
+# ── 语音 DB 辅助函数（定义在启动块之前） ──
+def _init_voice_db_early():
+    """初始化语音数据库"""
+    try:
+        from voice_db import init_voice_db
+        init_voice_db()
+        print('[Voice] 语音数据库已初始化')
+    except Exception as e:
+        print(f'[Voice] 语音数据库初始化失败（非致命）: {e}')
+
 with app.app_context():
     init_db()
     create_demo_account()
+    _init_voice_db_early()
 
 
 # =====================================================================
@@ -465,110 +479,292 @@ def list_subscriptions():
 #  语音 & TTS API
 # =====================================================================
 
+# ── TTS 缓存目录 ─────────────────────────────────────────────────────────
+TTS_CACHE_DIR = os.path.join(BASE_DIR, 'data', 'tts_cache')
+os.makedirs(TTS_CACHE_DIR, exist_ok=True)
+
+# ── 延迟加载 voice_service & voice_db ─────────────────────────────────────
+_voice_service = None
+_voice_import_error = None
+
+
+def _get_voice_service():
+    """延迟加载 VoiceService 单例"""
+    global _voice_service, _voice_import_error
+    if _voice_service is not None:
+        return _voice_service
+    try:
+        from voice_service import voice_service as vs, EDGE_VOICE_MAP
+        _voice_service = vs
+        return vs
+    except Exception as e:
+        _voice_import_error = str(e)
+        print(f'[Voice] 加载 voice_service 失败: {e}')
+        return None
+
+
+def _get_edge_voice_map():
+    """获取 Edge TTS 语音映射"""
+    try:
+        from voice_service import EDGE_VOICE_MAP
+        return EDGE_VOICE_MAP
+    except Exception:
+        return {}
+
+
+def _run_async(coro, timeout: float = 60.0):
+    """在 Flask 同步上下文中运行异步协程，返回结果"""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, coro)
+                return future.result(timeout=timeout)
+        else:
+            return loop.run_until_complete(coro)
+    except RuntimeError:
+        return asyncio.run(coro)
+
+
 @app.route('/api/v2/voice/list', methods=['GET'])
 def voice_list():
-    """获取可用语音列表"""
-    voices = [
-        {
-            'voice_id': 'edge_yunxi',
-            'name': '云希',
-            'display_name': '男播音员',
-            'gender': 'male',
-            'style': '沉稳大气',
-            'avatar': '🎤',
-            'avatar_class': 'vca-male',
-            'sample_text': '欢迎使用硅谷AI晨报语音播报，我是云希，每天五分钟，掌握AI圈最新动态。'
-        },
-        {
-            'voice_id': 'edge_xiaoxiao',
-            'name': '晓晓',
-            'display_name': '女播音员',
-            'gender': 'female',
-            'style': '温柔清晰',
-            'avatar': '🎙️',
-            'avatar_class': 'vca-female',
-            'sample_text': '欢迎使用硅谷AI晨报语音播报，我是晓晓，每天五分钟，掌握AI圈最新动态。'
-        },
-        {
-            'voice_id': 'edge_yunjian',
-            'name': '云健',
-            'display_name': '电影解说',
-            'gender': 'male',
-            'style': '戏谑幽默',
-            'avatar': '🎬',
-            'avatar_class': 'vca-movie',
-            'sample_text': '欢迎使用硅谷AI晨报语音播报，我是云健，每天五分钟，掌握AI圈最新动态。'
-        },
-        {
-            'voice_id': 'edge_yunyang',
-            'name': '云扬',
-            'display_name': '技术极客',
-            'gender': 'male',
-            'style': '快速理性',
-            'avatar': '🤖',
-            'avatar_class': 'vca-geek',
-            'sample_text': '欢迎使用硅谷AI晨报语音播报，我是云扬，每天五分钟，掌握AI圈最新动态。'
-        }
-    ]
+    """获取可用语音列表（8 预设：中英各 4）"""
+    edge_map = _get_edge_voice_map()
+    voices = []
+    for voice_id, info in edge_map.items():
+        voices.append({
+            'voice_id': voice_id,
+            'name': info.get('name', voice_id),
+            'display_name': info.get('name', voice_id),
+            'gender': 'female' if 'female' in info.get('name', '').lower() or 'xiaoxiao' in voice_id or 'aria' in voice_id or 'jenny' in voice_id else 'male',
+            'style': info.get('style', ''),
+            'lang': info.get('lang', 'zh'),
+            'avatar': info.get('emoji', '🎤'),
+            'avatar_class': f"vca-{info.get('lang', 'zh')}",
+            'sample_text': 'Welcome to Silicon Valley AI Morning Brief. I am your AI news anchor, bringing you the latest updates every day.' if info.get('lang') == 'en' else '欢迎使用硅谷AI晨报语音播报，每天五分钟，掌握AI圈最新动态。'
+        })
     return jsonify({'voices': voices})
 
 
 @app.route('/api/v2/voice/tts', methods=['POST'])
 def voice_tts():
-    """生成 TTS 语音"""
+    """生成 TTS 语音（使用 edge-tts 真实 TTS，带缓存）"""
     data = request.get_json(silent=True) or {}
-    text = data.get('text', '')
-    voice_id = data.get('voice_id', 'edge_yunxi')
+    text = (data.get('text', '') or '').strip()
+    voice_id = (data.get('voice_id', '') or '').strip()
     speed = float(data.get('speed', 1.0))
 
     if not text:
         return jsonify({'error': '缺少 text 参数'}), 400
 
-    print(f'[TTS] 生成语音: voice={voice_id}, speed={speed}, text_len={len(text)}')
+    if not voice_id:
+        voice_id = 'edge_yunxi'
 
-    # 尝试调用外部 TTS API
-    tts_url = os.environ.get('TTS_API_URL', '')
-    tts_token = os.environ.get('TTS_API_TOKEN', '')
+    # 检查预设语音映射
+    edge_map = _get_edge_voice_map()
+    if voice_id not in edge_map:
+        return jsonify({'error': f'不支持的语音 ID: {voice_id}'}), 400
 
-    if tts_url:
+    edge_voice = edge_map[voice_id]['voice']
+
+    # 计算缓存键（text + voice_id + speed 的 SHA256）
+    cache_key = hashlib.sha256(
+        f"{text}|{voice_id}|{speed:.2f}".encode('utf-8')
+    ).hexdigest()
+    cache_path = os.path.join(TTS_CACHE_DIR, f"{cache_key}.mp3")
+
+    # 命中缓存直接返回
+    if os.path.exists(cache_path):
+        print(f'[TTS] 缓存命中: {voice_id}, text_len={len(text)}')
+        with open(cache_path, 'rb') as f:
+            audio_data = f.read()
+        return Response(audio_data, mimetype='audio/mpeg',
+                        headers={'X-Voice-Source': 'edge-cache',
+                                 'X-Voice-Id': voice_id})
+
+    print(f'[TTS] 生成语音: voice={voice_id}({edge_voice}), speed={speed}, text_len={len(text)}')
+
+    # 计算 edge-tts rate 参数
+    rate_percent = int((speed - 1.0) * 100)
+    rate_str = f"{'+' if rate_percent >= 0 else ''}{rate_percent}%"
+
+    async def _generate():
+        import edge_tts
+        # 使用代理连接 Microsoft TTS 服务
+        proxy_url = os.environ.get('https_proxy') or os.environ.get('HTTPS_PROXY') or 'http://172.23.80.1:7890'
+        communicate = edge_tts.Communicate(
+            text=text, voice=edge_voice, rate=rate_str,
+            proxy=proxy_url,
+        )
+        # 使用 save() 直接保存到文件，更稳定
+        tmp_path = cache_path + '.tmp'
+        await communicate.save(tmp_path)
+        # 原子移动
+        os.rename(tmp_path, cache_path)
+        with open(cache_path, 'rb') as f:
+            return f.read()
+
+    try:
+        audio_data = _run_async(_generate(), timeout=60.0)
+        print(f'[TTS] edge-tts 生成 {len(audio_data)} 字节, 缓存: {cache_path}')
+        return Response(audio_data, mimetype='audio/mpeg',
+                        headers={'X-Voice-Source': 'edge',
+                                 'X-Voice-Id': voice_id})
+    except asyncio.TimeoutError:
+        return jsonify({'error': 'TTS 生成超时（60秒）'}), 504
+    except Exception as e:
+        print(f'[TTS] edge-tts 失败: {e}')
+        return jsonify({'error': f'TTS 生成失败: {str(e)}'}), 500
+
+
+# ── 语音克隆 API ─────────────────────────────────────────────────────────
+
+@app.route('/api/v2/voice/clone', methods=['POST'])
+def voice_clone():
+    """
+    上传音频文件，克隆语音（需要 FISH_AUDIO_API_KEY）。
+    multipart/form-data:
+        audio (file): 音频文件
+        name  (str) : 语音名称
+        description (str, optional): 语音描述
+    返回: {id, name, status, fish_voice_id, demo_mode?}
+    """
+    vs = _get_voice_service()
+    if vs is None:
+        return jsonify({'error': f'voice_service 加载失败: {_voice_import_error}'}), 500
+
+    if vs.is_demo_mode():
+        return jsonify({
+            'error': '语音克隆需要设置 FISH_AUDIO_API_KEY 环境变量',
+            'hint': '请在环境变量中配置 FISH_AUDIO_API_KEY=your_key 后重启服务',
+            'demo_mode': True,
+        }), 400
+
+    try:
+        import uuid as _uuid_mod
+        if 'audio' not in request.files:
+            return jsonify({'error': '缺少 audio 文件'}), 400
+
+        audio_file = request.files['audio']
+        name = (request.form.get('name', '') or '').strip()
+
+        if not name:
+            return jsonify({'error': '缺少 name 参数'}), 400
+
+        if audio_file.filename == '':
+            return jsonify({'error': '文件名为空'}), 400
+
+        # 检查文件大小
+        audio_file.seek(0, os.SEEK_END)
+        file_size = audio_file.tell()
+        audio_file.seek(0)
+
+        if file_size > 10 * 1024 * 1024:
+            return jsonify({'error': f'文件过大（{file_size} bytes），最大支持 10MB'}), 400
+
+        # 检查文件扩展名
+        ext = os.path.splitext(audio_file.filename)[1].lower().lstrip('.')
+        allowed_exts = {'mp3', 'wav', 'm4a', 'mp4', 'mov', 'flac', 'ogg', 'aac', 'wma'}
+        if ext not in allowed_exts:
+            return jsonify({'error': f'不支持的文件格式: .{ext}，支持: {", ".join(sorted(allowed_exts))}'}), 400
+
+        # 保存到本地上传目录
+        upload_dir = os.path.join(BASE_DIR, 'voice_uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        local_id = _uuid_mod.uuid4().hex[:12]
+        local_filename = f"{local_id}.{ext}"
+        local_path = os.path.join(upload_dir, local_filename)
+        audio_file.save(local_path)
+
+        print(f'[Voice] 音频已保存: {local_path} ({file_size} bytes)')
+
+        # 调用 Fish Audio 克隆
+        description = request.form.get('description', '')
+        result = _run_async(vs.clone_voice(local_path, name, description), timeout=120.0)
+
+        if 'error' in result:
+            return jsonify(result), 500
+
+        # 写入数据库
         try:
-            import urllib.request
-            import urllib.error
-
-            req_body = json.dumps({
-                'text': text,
-                'voice_id': voice_id,
-                'speed': speed
-            }).encode('utf-8')
-
-            req = urllib.request.Request(tts_url, data=req_body, method='POST')
-            req.add_header('Content-Type', 'application/json')
-            if tts_token:
-                req.add_header('Authorization', f'Bearer {tts_token}')
-
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                audio_data = resp.read()
-                print(f'[TTS] 外部 API 生成 {len(audio_data)} 字节')
-                from flask import Response
-                return Response(audio_data, mimetype='audio/mpeg')
+            from voice_db import insert_cloned_voice
+            insert_cloned_voice(
+                voice_id=local_id,
+                name=name,
+                fish_voice_id=result.get('voice_id', ''),
+                source_audio_path=local_path,
+                status=result.get('status', 'training'),
+                preview_url=result.get('preview_url', ''),
+            )
         except Exception as e:
-            print(f'[TTS] 外部 API 失败: {e}，回退到静默音频')
+            print(f'[Voice] 写入数据库失败（非致命）: {e}')
 
-    # 回退：生成静默 MP3
-    silent_mp3 = bytes([
-        0xFF, 0xFB, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    ])
-    mp3_frames = []
-    header = bytes([0xFF, 0xFB, 0x90, 0x00])
-    for i in range(80):
-        mp3_frames.append(header)
-        mp3_frames.append(b'\x00' * 413)
+        response_data = {
+            'id': local_id,
+            'name': name,
+            'status': result.get('status', 'training'),
+            'preview_url': result.get('preview_url', ''),
+            'fish_voice_id': result.get('voice_id', ''),
+        }
 
-    audio = b''.join(mp3_frames)
-    print(f'[TTS] 生成静默音频 {len(audio)} 字节')
-    from flask import Response
-    return Response(audio, mimetype='audio/mpeg')
+        if result.get('demo_mode'):
+            response_data['demo_mode'] = True
+            response_data['message'] = result.get('message', '')
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        print(f'[Voice] /api/v2/voice/clone 错误: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/v2/voice/clones', methods=['GET'])
+def voice_clones_list():
+    """列出已克隆的语音"""
+    try:
+        from voice_db import get_cloned_voices
+        cloned = get_cloned_voices()
+        return jsonify({'clones': cloned, 'total': len(cloned)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/v2/voice/clone/<clone_id>', methods=['DELETE'])
+def voice_clone_delete(clone_id: str):
+    """删除克隆语音"""
+    vs = _get_voice_service()
+    try:
+        from voice_db import get_cloned_voice, delete_cloned_voice
+
+        # 检查是否存在
+        cloned = get_cloned_voice(clone_id)
+        if not cloned:
+            return jsonify({'error': f'克隆语音 {clone_id} 不存在'}), 404
+
+        # 删除本地文件
+        source_path = cloned.get('source_audio_path', '')
+        if source_path and os.path.isfile(source_path):
+            try:
+                os.remove(source_path)
+                print(f'[Voice] 已删除音频文件: {source_path}')
+            except OSError as e:
+                print(f'[Voice] 删除文件失败: {e}')
+
+        # 删除 Fish Audio 上的语音（非阻塞）
+        fish_voice_id = cloned.get('fish_voice_id', '')
+        if fish_voice_id and vs and not vs.is_demo_mode():
+            try:
+                _run_async(vs.delete_voice(fish_voice_id), timeout=30.0)
+            except Exception:
+                pass
+
+        # 删除数据库记录
+        delete_cloned_voice(clone_id)
+
+        return jsonify({'status': 'ok', 'deleted': clone_id})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # =====================================================================
@@ -1117,8 +1313,11 @@ def main():
     print(f"     GET  /api/vapid-public-key    获取推送公钥")
     print(f"     POST /api/push/subscribe      订阅推送")
     print(f"     POST /api/push/unsubscribe    取消订阅")
-    print(f"     GET  /api/v2/voice/list       语音列表")
-    print(f"     POST /api/v2/voice/tts        生成TTS语音")
+    print(f"     GET  /api/v2/voice/list       语音列表（8预设）")
+    print(f"     POST /api/v2/voice/tts        生成TTS语音（edge-tts）")
+    print(f"     POST /api/v2/voice/clone      语音克隆（需API Key）")
+    print(f"     GET  /api/v2/voice/clones     已克隆语音列表")
+    print(f"     DELETE /api/v2/voice/clone/<id> 删除克隆语音")
     print(f"     GET  /api/v2/articles         今日资讯")
     print(f"\n  ⚠️  按 Ctrl+C 停止服务器\n")
 

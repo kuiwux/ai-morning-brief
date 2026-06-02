@@ -4,6 +4,10 @@ __pycache__/
 .DS_Store
 pipeline/server.py
 
+# ==== 语音文件 ====
+voice_uploads/
+data/tts_cache/
+
 # ==== 环境变量（敏感信息）====
 .env
 pipeline/.env
@@ -16,6 +20,7 @@ logs/
 
 # ==== 数据库文件 ====
 data/
+!data/.gitkeep
 *.db
 *.db-journal
 *.db-wal

@@ -1623,6 +1623,131 @@ def generate_fallback_report() -> str:
 
 
 # ============================================================
+# 语音日报生成
+# ============================================================
+
+def generate_daily_voice(
+    date_str: str = None,
+    voice_id: str = "edge_yunxi",
+    speed: float = 1.0,
+    server_url: str = "http://localhost:8899",
+) -> Optional[str]:
+    """
+    读取当日 output.json，生成播客脚本并调用本地 TTS 接口生成 MP3。
+
+    Args:
+        date_str: 日期字符串 YYYY-MM-DD，默认今天（北京时间）
+        voice_id: 语音 ID（edge_yunxi / edge_xiaoxiao / en_us_aria 等）
+        speed: 语速（0.5 ~ 2.0）
+        server_url: Parro 后端地址
+
+    Returns:
+        输出 MP3 文件路径，失败返回 None
+    """
+    ds = date_str or _today_date_str()
+    json_path = os.path.join(WORKDIR, f"output_{ds}.json")
+    output_path = os.path.join(WORKDIR, f"output_{ds}_voice.mp3")
+
+    if not os.path.exists(json_path):
+        # 尝试回退到 output.json 软链接
+        alt_path = os.path.join(WORKDIR, "output.json")
+        if os.path.exists(alt_path):
+            json_path = alt_path
+        else:
+            logger.error(f"❌ 未找到日报 JSON: {json_path}")
+            return None
+
+    logger.info(f"🎤 开始生成语音日报: {json_path} → {output_path}")
+    logger.info(f"   语音: {voice_id}, 语速: {speed}")
+
+    # 1. 读取文章数据
+    try:
+        with open(json_path, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        logger.error(f"❌ 读取 JSON 失败: {e}")
+        return None
+
+    headline = data.get("headline", {})
+    articles = data.get("articles", [])
+    if not articles:
+        logger.warning("⚠️ 日报中无文章，跳过语音生成")
+        return None
+
+    # 2. 构建播客脚本
+    script_parts = []
+    date_cn = data.get("date", ds)
+
+    # 开场白
+    script_parts.append(f"硅谷AI晨报，{date_cn}。")
+
+    # 头条新闻
+    if isinstance(headline, dict) and headline.get("title"):
+        hl_title = headline.get("title", "")
+        hl_summary = headline.get("summary", "")
+        script_parts.append(f"今日头条：{hl_title}。{hl_summary}")
+    elif isinstance(headline, str) and headline:
+        script_parts.append(f"今日头条：{headline}")
+
+    # 每篇文章
+    for i, article in enumerate(articles):
+        title = article.get("title", "")
+        summary = article.get("summary", "")
+        if not title:
+            continue
+        # 限制摘要长度，避免 TTS 文本过长
+        short_summary = summary[:200] if summary else ""
+        script_parts.append(f"第{i+1}条，{title}。{short_summary}")
+
+    # 结尾
+    script_parts.append("以上是今天的硅谷AI晨报，感谢收听，明天见。")
+
+    # 限制总长度
+    full_script = " ".join(script_parts)
+    max_chars = 3000
+    if len(full_script) > max_chars:
+        full_script = full_script[:max_chars] + "..."
+        logger.warning(f"⚠️ 播客脚本过长，截断至 {max_chars} 字符")
+
+    logger.info(f"📝 播客脚本: {len(full_script)} 字符")
+    logger.info(f"   {full_script[:100]}...")
+
+    # 3. 调用本地 TTS 接口
+    tts_url = f"{server_url.rstrip('/')}/api/v2/voice/tts"
+
+    try:
+        resp = requests.post(
+            tts_url,
+            json={
+                "text": full_script,
+                "voice_id": voice_id,
+                "speed": speed,
+            },
+            timeout=120,
+        )
+
+        if resp.status_code == 200:
+            with open(output_path, "wb") as f:
+                f.write(resp.content)
+            logger.info(f"✅ 语音日报已生成: {output_path} ({len(resp.content)} bytes)")
+            return output_path
+        else:
+            logger.error(f"❌ TTS 接口返回 {resp.status_code}: {resp.text[:300]}")
+            return None
+
+    except requests.ConnectionError:
+        logger.error(f"❌ 无法连接 TTS 服务: {tts_url}")
+        logger.error(f"   请确保 Parro 后端已启动: python server.py")
+        return None
+    except requests.Timeout:
+        logger.error(f"❌ TTS 请求超时（120秒）")
+        return None
+    except Exception as e:
+        logger.error(f"❌ TTS 请求异常: {e}")
+        return None
+
+
+# ============================================================
 # 主流程
 # ============================================================
 
@@ -1824,6 +1949,16 @@ def main():
                 logger.warning("⚠️ 微信草稿创建失败（可能权限不足或接口限制）")
     except Exception as e:
         logger.warning(f"⚠️ 微信草稿创建失败（不影响主流程）: {e}")
+
+    # ---- 第六步：生成语音日报 ----
+    try:
+        voice_path = generate_daily_voice(date_str=today_ds)
+        if voice_path:
+            logger.info(f"🎤 语音日报: {voice_path}")
+        else:
+            logger.warning("⚠️ 语音日报生成跳过（可能 TTS 服务未启动）")
+    except Exception as e:
+        logger.warning(f"⚠️ 语音日报生成失败（不影响主流程）: {e}")
 
     logger.info("=" * 50)
     logger.info("🎉 Pipeline 执行完成！")
