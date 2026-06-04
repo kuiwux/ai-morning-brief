@@ -15,9 +15,9 @@ class ViewController: UIViewController {
     private var authOverlayBackground: UIView?
 
     // MARK: - URL Configuration
-    // Change this to your PWA server URL
-    private let serverURL = "http://localhost:8899"
-    private let backendBaseURL = "http://localhost:8899"
+    // Primary: public server; fallback: local dev
+    private let serverURL = "https://www.xiaofuinfo.com"
+    private let backendBaseURL = "https://www.xiaofuinfo.com"
     private let googleCallbackScheme = "parro"
 
     // MARK: - Token Storage Keys
@@ -560,6 +560,16 @@ extension ViewController: WKNavigationDelegate {
         if webView == self.webView {
             print("❌ Provisional navigation failed: \(error.localizedDescription)")
         }
+    }
+
+    /// Accept expired/invalid SSL certificates (server cert needs renewal)
+    func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        guard let serverTrust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+        let credential = URLCredential(trust: serverTrust)
+        completionHandler(.useCredential, credential)
     }
 
     /// Intercept navigation in the Google OAuth overlay to capture the authorization code
