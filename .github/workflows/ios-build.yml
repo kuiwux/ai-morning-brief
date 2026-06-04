@@ -43,7 +43,7 @@ jobs:
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/private_keys/AuthKey_P22XMUK9Q6.p8 \
             -authenticationKeyID P22XMUK9Q6 \
-            -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }}
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
 
       - name: Export IPA
         working-directory: ios
@@ -55,7 +55,7 @@ jobs:
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/private_keys/AuthKey_P22XMUK9Q6.p8 \
             -authenticationKeyID P22XMUK9Q6 \
-            -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }}
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
 
       - name: Upload to App Store Connect
         run: |
@@ -63,7 +63,7 @@ jobs:
             -f ios/build/Parro.ipa \
             -t ios \
             --apiKey P22XMUK9Q6 \
-            --apiIssuer ${{ secrets.APPSTORE_ISSUER_ID }}
+            --apiIssuer ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
 
       - name: Upload IPA as artifact
         uses: actions/upload-artifact@v4
