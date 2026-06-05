@@ -564,12 +564,8 @@ extension ViewController: WKNavigationDelegate {
 
     /// Accept expired/invalid SSL certificates (server cert needs renewal)
     func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        guard let serverTrust = challenge.protectionSpace.serverTrust else {
-            completionHandler(.performDefaultHandling, nil)
-            return
-        }
-        let credential = URLCredential(trust: serverTrust)
-        completionHandler(.useCredential, credential)
+        // Default SSL validation — certificate is now valid (Let's Encrypt)
+        completionHandler(.performDefaultHandling, nil)
     }
 
     /// Intercept navigation in the Google OAuth overlay to capture the authorization code
