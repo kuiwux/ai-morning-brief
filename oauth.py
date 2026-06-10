@@ -1,12 +1,14 @@
 """
-Parro OAuth module — Google & Apple Sign-In
+Parro OAuth module — Google, Apple, WeChat & Alipay Sign-In
 Handles OAuth login flows and user lookup/creation.
 """
 
 import os
 import time
 import json
+import base64
 import requests
+from urllib.parse import urlencode
 
 from flask import request, jsonify
 from auth import create_token, decode_token
@@ -432,5 +434,433 @@ def apple_auth_callback():
     except Exception as e:
         return jsonify({
             'error': f'Apple sign-in failed: {str(e)}',
+            'code': 'OAUTH_FAILED'
+        }), 500
+
+
+# =============================================================================
+#  WeChat OAuth (微信网页授权)
+# =============================================================================
+
+WEIXIN_APPID = os.environ.get('WEIXIN_APPID', '')
+WEIXIN_APPSECRET = os.environ.get('WEIXIN_APPSECRET', '')
+WEIXIN_REDIRECT_URI = os.environ.get('WEIXIN_REDIRECT_URI', '')
+
+# 微信 API 走代理
+WEIXIN_PROXY = os.environ.get('https_proxy') or os.environ.get('HTTPS_PROXY') or 'http://172.23.80.1:7890'
+
+WEIXIN_AUTH_URL = 'https://open.weixin.qq.com/connect/oauth2/authorize'
+WEIXIN_TOKEN_URL = 'https://api.weixin.qq.com/sns/oauth2/access_token'
+WEIXIN_USERINFO_URL = 'https://api.weixin.qq.com/sns/userinfo'
+
+_wechat_session = None
+
+
+def _get_wechat_session():
+    """获取带代理的 requests Session（微信 API 需走代理）"""
+    global _wechat_session
+    if _wechat_session is None:
+        _wechat_session = requests.Session()
+        _wechat_session.proxies = {'http': WEIXIN_PROXY, 'https': WEIXIN_PROXY}
+        _wechat_session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (compatible; Parro/1.0)',
+        })
+    return _wechat_session
+
+
+def wechat_auth_url():
+    """
+    GET /api/auth/wechat/url
+    返回微信网页授权 URL，前端跳转到该地址让用户授权。
+    """
+    if not WEIXIN_APPID or not WEIXIN_REDIRECT_URI:
+        return jsonify({
+            'error': '微信登录未配置',
+            'code': 'OAUTH_NOT_CONFIGURED'
+        }), 500
+
+    params = {
+        'appid': WEIXIN_APPID,
+        'redirect_uri': WEIXIN_REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'snsapi_userinfo',
+    }
+    query = urlencode(params)
+    auth_url = f'{WEIXIN_AUTH_URL}?{query}#wechat_redirect'
+
+    return jsonify({
+        'url': auth_url,
+        'provider': 'wechat'
+    }), 200
+
+
+def wechat_auth_callback():
+    """
+    GET /api/auth/wechat/callback?code=xxx&state=xxx
+    处理微信授权回调：code 换 access_token → 获取用户信息 → 创建/查找用户 → 返回 JWT。
+    """
+    code = request.args.get('code', '').strip()
+    if not code:
+        return jsonify({
+            'error': '缺少授权 code',
+            'code': 'MISSING_CODE'
+        }), 400
+
+    if not WEIXIN_APPID or not WEIXIN_APPSECRET:
+        return jsonify({
+            'error': '微信登录未配置',
+            'code': 'OAUTH_NOT_CONFIGURED'
+        }), 500
+
+    try:
+        sess = _get_wechat_session()
+
+        # Step 1: code 换 access_token
+        token_resp = sess.get(WEIXIN_TOKEN_URL, params={
+            'appid': WEIXIN_APPID,
+            'secret': WEIXIN_APPSECRET,
+            'code': code,
+            'grant_type': 'authorization_code',
+        }, timeout=15)
+
+        if token_resp.status_code != 200:
+            return jsonify({
+                'error': '微信 access_token 请求失败',
+                'code': 'TOKEN_EXCHANGE_FAILED',
+                'detail': token_resp.text[:500]
+            }), 400
+
+        token_data = token_resp.json()
+
+        # 微信错误码检查
+        if token_data.get('errcode'):
+            return jsonify({
+                'error': f"微信返回错误: {token_data.get('errmsg', 'unknown')}",
+                'code': 'WECHAT_ERROR',
+                'errcode': token_data.get('errcode')
+            }), 400
+
+        access_token = token_data.get('access_token')
+        openid = token_data.get('openid')
+
+        if not access_token or not openid:
+            return jsonify({
+                'error': '微信返回数据不完整',
+                'code': 'NO_ACCESS_TOKEN'
+            }), 400
+
+        # Step 2: 获取用户信息
+        userinfo_resp = sess.get(WEIXIN_USERINFO_URL, params={
+            'access_token': access_token,
+            'openid': openid,
+            'lang': 'zh_CN',
+        }, timeout=15)
+
+        if userinfo_resp.status_code != 200:
+            return jsonify({
+                'error': '获取微信用户信息失败',
+                'code': 'USERINFO_FETCH_FAILED'
+            }), 400
+
+        userinfo = userinfo_resp.json()
+
+        if userinfo.get('errcode'):
+            return jsonify({
+                'error': f"获取微信用户信息错误: {userinfo.get('errmsg', 'unknown')}",
+                'code': 'WECHAT_ERROR',
+                'errcode': userinfo.get('errcode')
+            }), 400
+
+        nickname = userinfo.get('nickname', '')
+        headimgurl = userinfo.get('headimgurl', '')
+        unionid = userinfo.get('unionid') or None
+
+        # oauth_id: 优先用 unionid（跨应用唯一），否则用 openid
+        oauth_id = unionid or openid
+
+        # name: 过滤掉微信昵称中可能的特殊字符
+        import re
+        safe_name = re.sub(r'[^\w\u4e00-\u9fff\s\-_]', '', nickname).strip() if nickname else None
+        if not safe_name:
+            safe_name = None
+
+        # Create or get user
+        user_id, username, is_new = create_or_get_oauth_user(
+            provider='wechat',
+            oauth_id=oauth_id,
+            email=None,  # 微信不返回邮箱
+            name=safe_name,
+            avatar_url=headimgurl or None
+        )
+
+        # Generate JWT
+        token = create_token(user_id, username, name=safe_name)
+
+        return jsonify({
+            'message': '微信登录成功',
+            'token': token,
+            'user': {
+                'id': user_id,
+                'username': username,
+                'email': None,
+                'name': safe_name,
+                'avatar_url': headimgurl or None,
+                'oauth_provider': 'wechat',
+            },
+            'is_new': is_new
+        }), 200
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({
+            'error': f'网络错误: {str(e)}',
+            'code': 'NETWORK_ERROR'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'error': f'微信登录失败: {str(e)}',
+            'code': 'OAUTH_FAILED'
+        }), 500
+
+
+# =============================================================================
+#  Alipay OAuth (支付宝第三方登录)
+# =============================================================================
+
+ALIPAY_APP_ID = os.environ.get('ALIPAY_APP_ID', '')
+ALIPAY_PRIVATE_KEY = os.environ.get('ALIPAY_PRIVATE_KEY', '')
+ALIPAY_PUBLIC_KEY = os.environ.get('ALIPAY_PUBLIC_KEY', '')
+ALIPAY_REDIRECT_URI = os.environ.get('ALIPAY_REDIRECT_URI', '')
+
+ALIPAY_AUTH_URL = 'https://openauth.alipay.com/oauth2/publicAppAuthorize.htm'
+ALIPAY_GATEWAY_URL = 'https://openapi.alipay.com/gateway.do'
+
+
+def _alipay_sign(params: dict, private_key_pem: str) -> str:
+    """
+    支付宝 RSA2-SHA256 签名。
+    1. 按字母序排列参数
+    2. 拼接 key=value 用 & 连接
+    3. 使用 SHA256-RSA 签名
+    4. Base64 编码
+    """
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import padding
+    from cryptography.hazmat.backends import default_backend
+
+    # Step 1 & 2: 排序拼接
+    sorted_keys = sorted(params.keys())
+    sign_str = '&'.join(f'{k}={params[k]}' for k in sorted_keys if params[k] is not None)
+
+    # Step 3: 加载私钥并签名
+    private_key = serialization.load_pem_private_key(
+        private_key_pem.encode('utf-8'),
+        password=None,
+        backend=default_backend()
+    )
+
+    signature = private_key.sign(
+        sign_str.encode('utf-8'),
+        padding.PKCS1v15(),
+        hashes.SHA256()
+    )
+
+    # Step 4: Base64 编码
+    return base64.b64encode(signature).decode('utf-8')
+
+
+def _alipay_verify_sign(sign_str: str, signature: str, public_key_pem: str) -> bool:
+    """验证支付宝异步通知签名（预留，OAuth 流程中不一定需要）"""
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import padding
+    from cryptography.hazmat.backends import default_backend
+
+    try:
+        public_key = serialization.load_pem_public_key(
+            public_key_pem.encode('utf-8'),
+            backend=default_backend()
+        )
+        public_key.verify(
+            base64.b64decode(signature),
+            sign_str.encode('utf-8'),
+            padding.PKCS1v15(),
+            hashes.SHA256()
+        )
+        return True
+    except Exception:
+        return False
+
+
+def _alipay_call(method: str, biz_content: dict) -> dict:
+    """
+    调用支付宝 API（openapi.alipay.com/gateway.do）。
+    不走代理（国内接口）。
+    """
+    import time as _time
+
+    params = {
+        'app_id': ALIPAY_APP_ID,
+        'method': method,
+        'charset': 'utf-8',
+        'sign_type': 'RSA2',
+        'timestamp': _time.strftime('%Y-%m-%d %H:%M:%S', _time.localtime()),
+        'version': '1.0',
+        'biz_content': json.dumps(biz_content, ensure_ascii=False),
+    }
+    if ALIPAY_REDIRECT_URI:
+        params['return_url'] = ALIPAY_REDIRECT_URI
+
+    # 签名
+    params['sign'] = _alipay_sign(params, ALIPAY_PRIVATE_KEY)
+
+    # 发送请求（支付宝国内接口，不走代理）
+    resp = requests.post(ALIPAY_GATEWAY_URL, data=params, timeout=15)
+    resp.encoding = 'utf-8'
+
+    return resp.json()
+
+
+def alipay_auth_url():
+    """
+    GET /api/auth/alipay/url
+    返回支付宝授权 URL，前端跳转到该地址让用户授权。
+    """
+    if not ALIPAY_APP_ID or not ALIPAY_REDIRECT_URI:
+        return jsonify({
+            'error': '支付宝登录未配置',
+            'code': 'OAUTH_NOT_CONFIGURED'
+        }), 500
+
+    params = {
+        'app_id': ALIPAY_APP_ID,
+        'redirect_uri': ALIPAY_REDIRECT_URI,
+        'scope': 'auth_user',
+    }
+    query = urlencode(params)
+    auth_url = f'{ALIPAY_AUTH_URL}?{query}'
+
+    return jsonify({
+        'url': auth_url,
+        'provider': 'alipay'
+    }), 200
+
+
+def alipay_auth_callback():
+    """
+    GET /api/auth/alipay/callback?auth_code=xxx
+    处理支付宝授权回调：auth_code 换 access_token → 获取用户信息 → 创建/查找用户 → 返回 JWT。
+    """
+    auth_code = request.args.get('auth_code', '').strip()
+    if not auth_code:
+        return jsonify({
+            'error': '缺少授权 auth_code',
+            'code': 'MISSING_CODE'
+        }), 400
+
+    if not ALIPAY_APP_ID or not ALIPAY_PRIVATE_KEY:
+        return jsonify({
+            'error': '支付宝登录未配置',
+            'code': 'OAUTH_NOT_CONFIGURED'
+        }), 500
+
+    try:
+        # Step 1: auth_code 换 access_token
+        token_result = _alipay_call('alipay.system.oauth.token', {
+            'grant_type': 'authorization_code',
+            'code': auth_code,
+        })
+
+        token_response = token_result.get('alipay_system_oauth_token_response', {})
+        if not token_response:
+            return jsonify({
+                'error': '支付宝 token 请求失败',
+                'code': 'TOKEN_EXCHANGE_FAILED',
+                'detail': json.dumps(token_result, ensure_ascii=False)[:500]
+            }), 400
+
+        access_token = token_response.get('access_token')
+        user_id_alipay = token_response.get('user_id')
+
+        if not access_token or not user_id_alipay:
+            # 检查是否有错误
+            error_msg = token_response.get('sub_msg') or token_response.get('msg') or '支付宝返回数据不完整'
+            return jsonify({
+                'error': error_msg,
+                'code': 'NO_ACCESS_TOKEN'
+            }), 400
+
+        # Step 2: 获取用户信息（需要 auth_token 作为额外参数）
+        import time as _time
+
+        biz_content = json.dumps({}, ensure_ascii=False)
+        params = {
+            'app_id': ALIPAY_APP_ID,
+            'method': 'alipay.user.info.share',
+            'charset': 'utf-8',
+            'sign_type': 'RSA2',
+            'timestamp': _time.strftime('%Y-%m-%d %H:%M:%S', _time.localtime()),
+            'version': '1.0',
+            'biz_content': biz_content,
+            'auth_token': access_token,
+        }
+        params['sign'] = _alipay_sign(params, ALIPAY_PRIVATE_KEY)
+
+        resp = requests.post(ALIPAY_GATEWAY_URL, data=params, timeout=15)
+        resp.encoding = 'utf-8'
+        info_result = resp.json()
+
+        info_response = info_result.get('alipay_user_info_share_response', {})
+        if not info_response:
+            return jsonify({
+                'error': '获取支付宝用户信息失败',
+                'code': 'USERINFO_FETCH_FAILED',
+                'detail': json.dumps(info_result, ensure_ascii=False)[:500]
+            }), 400
+
+        # 检查错误码
+        code = info_response.get('code', '')
+        if code != '10000':
+            return jsonify({
+                'error': f"获取支付宝用户信息错误: {info_response.get('sub_msg', info_response.get('msg', 'unknown'))}",
+                'code': 'ALIPAY_ERROR',
+                'alipay_code': code
+            }), 400
+
+        nick_name = info_response.get('nick_name', '')
+        avatar = info_response.get('avatar', '')
+
+        # Create or get user
+        user_id, username, is_new = create_or_get_oauth_user(
+            provider='alipay',
+            oauth_id=user_id_alipay,
+            email=None,  # 支付宝 user.info.share 不返回邮箱
+            name=nick_name or None,
+            avatar_url=avatar or None
+        )
+
+        # Generate JWT
+        token = create_token(user_id, username, name=nick_name or None)
+
+        return jsonify({
+            'message': '支付宝登录成功',
+            'token': token,
+            'user': {
+                'id': user_id,
+                'username': username,
+                'email': None,
+                'name': nick_name or None,
+                'avatar_url': avatar or None,
+                'oauth_provider': 'alipay',
+            },
+            'is_new': is_new
+        }), 200
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({
+            'error': f'网络错误: {str(e)}',
+            'code': 'NETWORK_ERROR'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'error': f'支付宝登录失败: {str(e)}',
             'code': 'OAUTH_FAILED'
         }), 500

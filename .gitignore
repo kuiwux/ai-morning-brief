@@ -43,3 +43,4 @@ data/
 ios/Pods/
 ios/*.xcworkspace
 ios/Podfile.lock
+ios/Parro/asc_credentials.txt

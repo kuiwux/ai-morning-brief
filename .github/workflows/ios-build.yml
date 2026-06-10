@@ -1,139 +1,73 @@
-name: Build iOS IPA
+name: Build & Upload iOS
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
     paths:
       - 'ios/**'
       - '.github/workflows/ios-build.yml'
-      - 'icons/**'
   workflow_dispatch:
     inputs:
-      server_url:
-        description: 'PWA server URL'
+      version:
+        description: 'Build version (e.g. 2)'
         required: false
-        default: 'http://localhost:8899'
+        default: ''
 
 jobs:
-  build-ios:
-    name: Build iOS IPA
-    runs-on: macos-latest
+  build-and-upload:
+    runs-on: macos-26
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Override server URL
-        if: ${{ github.event.inputs.server_url != '' }}
+      - name: Set Xcode path
+        run: echo "XCODE_PATH=$(xcode-select -p)" && xcodebuild -version
+
+      - name: Decode App Store Connect API Key
         run: |
-          echo "Server URL: $SERVER_URL"
-          sed -i '' "s|http://localhost:8899|$SERVER_URL|g" ios/Parro/ViewController.swift
-          cat ios/Parro/ViewController.swift
-        env:
-          SERVER_URL: ${{ github.event.inputs.server_url }}
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APPSTORE_API_KEY_BASE64 }}" | base64 --decode > ~/private_keys/AuthKey_P22XMUK9Q6.p8
+          chmod 600 ~/private_keys/AuthKey_P22XMUK9Q6.p8
 
-      # ============ API Key 认证 ============
-      # 需要在 GitHub Secrets 中设置:
-      #   - APPSTORE_CONNECT_API_KEY: p8 私钥内容（多行）
-      #   - APPSTORE_CONNECT_KEY_ID: Key ID
-      #   - APPSTORE_CONNECT_ISSUER_ID: Issuer ID
-      #   - APPLE_TEAM_ID: Apple Developer Team ID
-      - name: Setup App Store Connect API Key
-        env:
-          APPSTORE_CONNECT_API_KEY: ${{ secrets.APPSTORE_CONNECT_API_KEY }}
+      - name: Build & Archive
+        working-directory: ios
         run: |
-          echo "$APPSTORE_CONNECT_API_KEY" > ~/api_key.p8
-          chmod 600 ~/api_key.p8
-          echo "✅ API Key written to ~/api_key.p8"
-
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '26.3'
-
-      - name: Verify ExportOptions.plist
-        run: |
-          echo "=== ExportOptions.plist ==="
-          cat ios/ExportOptions.plist
-          plutil -lint ios/ExportOptions.plist
-
-      - name: Archive & Export IPA
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPSTORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
-          APPSTORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
-        run: |
-          cd ios
-
-          echo "🔐 Using API Key authentication"
-          echo "   Team ID: $APPLE_TEAM_ID"
-          echo "   Key ID: $APPSTORE_CONNECT_KEY_ID"
-
-          # Archive
-          echo "📦 Archiving..."
-          xcodebuild \
+          xcodebuild archive \
             -project Parro.xcodeproj \
             -scheme Parro \
-            -sdk iphoneos \
             -configuration Release \
-            -archivePath "${{ github.workspace }}/build/Parro.xcarchive" \
-            archive \
-            -authenticationKeyPath ~/api_key.p8 \
-            -authenticationKeyID "$APPSTORE_CONNECT_KEY_ID" \
-            -authenticationKeyIssuerID "$APPSTORE_CONNECT_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            -allowProvisioningUpdates
+            -archivePath ./build/Parro.xcarchive \
+            -destination "generic/platform=iOS" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_P22XMUK9Q6.p8 \
+            -authenticationKeyID P22XMUK9Q6 \
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
 
-          # Export IPA
-          echo "📤 Exporting IPA..."
-          xcodebuild \
-            -exportArchive \
-            -archivePath "${{ github.workspace }}/build/Parro.xcarchive" \
-            -exportPath "${{ github.workspace }}/build/ipa" \
-            -exportOptionsPlist "${{ github.workspace }}/ios/ExportOptions.plist" \
-            -authenticationKeyPath ~/api_key.p8 \
-            -authenticationKeyID "$APPSTORE_CONNECT_KEY_ID" \
-            -authenticationKeyIssuerID "$APPSTORE_CONNECT_ISSUER_ID" \
-            -allowProvisioningUpdates
-
-          echo "✅ Build complete!"
-          ls -la "${{ github.workspace }}/build/ipa/"
-
-      # ============ 上传到 App Store Connect ============
-      - name: Upload IPA to App Store Connect
-        env:
-          APPSTORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
-          APPSTORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
+      - name: Export IPA
+        working-directory: ios
         run: |
-          # Move API key to altool's expected path
-          mkdir -p ~/.appstoreconnect/private_keys
-          cp ~/api_key.p8 ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_CONNECT_KEY_ID}.p8
+          xcodebuild -exportArchive \
+            -archivePath ./build/Parro.xcarchive \
+            -exportPath ./build \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_P22XMUK9Q6.p8 \
+            -authenticationKeyID P22XMUK9Q6 \
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
 
-          IPA_PATH=$(find "${{ github.workspace }}/build/ipa" -name "*.ipa" | head -1)
-          if [ -z "$IPA_PATH" ]; then
-            echo "❌ No IPA found to upload"
-            exit 1
-          fi
-          echo "📤 Uploading IPA to App Store Connect..."
-          echo "   File: $IPA_PATH"
+      - name: Upload to App Store Connect
+        run: |
+          xcrun altool --upload-app \
+            -f ios/build/Parro.ipa \
+            -t ios \
+            --apiKey P22XMUK9Q6 \
+            --apiIssuer ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
 
-          UPLOAD_OUTPUT=$(xcrun altool --upload-app \
-            -f "$IPA_PATH" \
-            --type ios \
-            --apiKey "$APPSTORE_CONNECT_KEY_ID" \
-            --apiIssuer "$APPSTORE_CONNECT_ISSUER_ID" 2>&1)
-          echo "$UPLOAD_OUTPUT"
-          if echo "$UPLOAD_OUTPUT" | grep -qE "FAILED|Error:"; then
-            echo "❌ Upload failed!"
-            exit 1
-          fi
-
-          echo "✅ IPA uploaded to App Store Connect!"
-
-      - name: Upload IPA artifact
+      - name: Upload IPA as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-ipa
-          path: build/ipa/*.ipa
-          retention-days: 7
+          name: Parro.ipa
+          path: ios/build/Parro.ipa
+          retention-days: 30
