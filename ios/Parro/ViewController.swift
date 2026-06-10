@@ -14,6 +14,12 @@ class ViewController: UIViewController {
     private var authOverlayWebView: WKWebView?
     private var authOverlayBackground: UIView?
 
+    // Loading & Error State
+    private var loadingIndicator: UIActivityIndicatorView!
+    private var errorView: UIView!
+    private var loadTimeoutTimer: Timer?
+    private let loadTimeoutSeconds: TimeInterval = 15.0
+
     // MARK: - URL Configuration
     // Primary: public server; fallback: local dev
     private let serverURL = "https://www.xiaofuinfo.com"
@@ -32,6 +38,7 @@ class ViewController: UIViewController {
 
         setupSignInBar()
         setupWebView()
+        setupLoadingIndicator()
         loadWebContent()
         updateSignInBarVisibility()
 
@@ -140,7 +147,114 @@ class ViewController: UIViewController {
             return
         }
         let request = URLRequest(url: url)
+        startLoading()
         webView.load(request)
+    }
+
+    private func setupLoadingIndicator() {
+        // Loading spinner
+        loadingIndicator = UIActivityIndicatorView(style: .large)
+        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+        loadingIndicator.hidesWhenStopped = true
+        loadingIndicator.color = UIColor(red: 0.77, green: 0.63, blue: 0.42, alpha: 1.0) // Gold accent
+        view.addSubview(loadingIndicator)
+        NSLayoutConstraint.activate([
+            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+
+        // Error view (hidden initially)
+        errorView = UIView()
+        errorView.translatesAutoresizingMaskIntoConstraints = false
+        errorView.isHidden = true
+        errorView.backgroundColor = .systemBackground
+        view.addSubview(errorView)
+        NSLayoutConstraint.activate([
+            errorView.topAnchor.constraint(equalTo: view.topAnchor),
+            errorView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            errorView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            errorView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        ])
+
+        // Error icon
+        let errorIcon = UILabel()
+        errorIcon.text = "📡"
+        errorIcon.font = .systemFont(ofSize: 48)
+        errorIcon.textAlignment = .center
+        errorIcon.translatesAutoresizingMaskIntoConstraints = false
+        errorView.addSubview(errorIcon)
+
+        // Error message
+        let errorLabel = UILabel()
+        errorLabel.text = "网络连接失败\n请检查网络后重试"
+        errorLabel.numberOfLines = 0
+        errorLabel.textAlignment = .center
+        errorLabel.font = .systemFont(ofSize: 16)
+        errorLabel.textColor = .secondaryLabel
+        errorLabel.translatesAutoresizingMaskIntoConstraints = false
+        errorView.addSubview(errorLabel)
+
+        // Retry button
+        let retryButton = UIButton(type: .system)
+        retryButton.setTitle("🔄 重新加载", for: .normal)
+        retryButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .medium)
+        retryButton.backgroundColor = UIColor(red: 0.77, green: 0.63, blue: 0.42, alpha: 1.0)
+        retryButton.setTitleColor(.white, for: .normal)
+        retryButton.layer.cornerRadius = 10
+        retryButton.translatesAutoresizingMaskIntoConstraints = false
+        retryButton.addTarget(self, action: #selector(retryLoadWebContent), for: .touchUpInside)
+        errorView.addSubview(retryButton)
+
+        NSLayoutConstraint.activate([
+            errorIcon.centerXAnchor.constraint(equalTo: errorView.centerXAnchor),
+            errorIcon.bottomAnchor.constraint(equalTo: errorLabel.topAnchor, constant: -16),
+            errorLabel.centerXAnchor.constraint(equalTo: errorView.centerXAnchor),
+            errorLabel.centerYAnchor.constraint(equalTo: errorView.centerYAnchor),
+            errorLabel.leadingAnchor.constraint(equalTo: errorView.leadingAnchor, constant: 32),
+            errorLabel.trailingAnchor.constraint(equalTo: errorView.trailingAnchor, constant: -32),
+            retryButton.centerXAnchor.constraint(equalTo: errorView.centerXAnchor),
+            retryButton.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 24),
+            retryButton.widthAnchor.constraint(equalToConstant: 160),
+            retryButton.heightAnchor.constraint(equalToConstant: 44)
+        ])
+    }
+
+    private func startLoading() {
+        loadingIndicator.startAnimating()
+        errorView.isHidden = true
+        webView.isHidden = true
+        // Start timeout timer
+        loadTimeoutTimer?.invalidate()
+        loadTimeoutTimer = Timer.scheduledTimer(withTimeInterval: loadTimeoutSeconds, repeats: false) { [weak self] _ in
+            self?.handleLoadTimeout()
+        }
+    }
+
+    private func stopLoading() {
+        loadingIndicator.stopAnimating()
+        loadTimeoutTimer?.invalidate()
+        loadTimeoutTimer = nil
+        webView.isHidden = false
+    }
+
+    private func handleLoadTimeout() {
+        print("⏰ Web content load timeout after \(loadTimeoutSeconds)s")
+        stopLoading()
+        webView.stopLoading()
+        showErrorState()
+    }
+
+    private func showErrorState() {
+        errorView.isHidden = false
+        loadingIndicator.stopAnimating()
+        webView.isHidden = true
+    }
+
+    @objc private func retryLoadWebContent() {
+        print("🔄 Retrying web content load...")
+        errorView.isHidden = true
+        startLoading()
+        loadWebContent()
     }
 
     // MARK: - Token Injection
@@ -545,6 +659,7 @@ extension ViewController: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if webView == self.webView {
             print("✅ Web content loaded successfully")
+            stopLoading()
             // Inject stored token after page load
             injectAuthToken()
         }
@@ -553,12 +668,16 @@ extension ViewController: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         if webView == self.webView {
             print("❌ Web content failed to load: \(error.localizedDescription)")
+            stopLoading()
+            showErrorState()
         }
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         if webView == self.webView {
             print("❌ Provisional navigation failed: \(error.localizedDescription)")
+            stopLoading()
+            showErrorState()
         }
     }
 
