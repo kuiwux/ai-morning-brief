@@ -4,16 +4,16 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>zh_CN</string>
-\t<key>CFBundleDisplayName</key>
-\t<string>Parro</string>
-\t<key>CFBundleExecutable</key>
-\t<string>$(EXECUTABLE_NAME)</string>
-\t<key>CFBundleIdentifier</key>
-\t<string>com.parro.xiaofuinfo</string>
-\t<key>CFBundleInfoDictionaryVersion</key>
-\t<string>6.0</string>
-\t<key>CFBundleName</key>
-\t<string>Parro</string>
+	<key>CFBundleDisplayName</key>
+	<string>Parro</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.parro.xiaofuinfo</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Parro</string>
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
