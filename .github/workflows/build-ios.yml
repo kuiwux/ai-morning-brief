@@ -2,7 +2,7 @@ name: Build iOS App
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
     paths:
       - 'ios/**'
   workflow_dispatch:
@@ -27,32 +27,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: latest-stable
-
-      - name: Install App Store Connect API Key
-        env:
-          ASC_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
-          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      - name: Decode App Store Connect API Key
         run: |
           mkdir -p ~/private_keys
-          echo "$ASC_KEY_CONTENT" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          echo "${{ secrets.APPSTORE_API_KEY_BASE64 }}" | base64 --decode > ~/private_keys/AuthKey_P22XMUK9Q6.p8
+          chmod 600 ~/private_keys/AuthKey_P22XMUK9Q6.p8
 
       - name: Build and Archive
+        working-directory: ios
         run: |
-          cd ios
           xcodebuild archive \
             -project Parro.xcodeproj \
             -scheme Parro \
-            -archivePath build/Parro.xcarchive \
+            -configuration Release \
+            -archivePath ./build/Parro.xcarchive \
             -destination 'generic/platform=iOS' \
             -allowProvisioningUpdates \
-            -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
-            -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+            -authenticationKeyPath ~/private_keys/AuthKey_P22XMUK9Q6.p8 \
+            -authenticationKeyID P22XMUK9Q6 \
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
 
       - name: Determine Export Method
         id: export_method
@@ -64,9 +57,8 @@ jobs:
           fi
 
       - name: Export IPA
+        working-directory: ios
         run: |
-          cd ios
-          # Generate ExportOptions plist based on method
           cat > build/ExportOptions.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -85,24 +77,17 @@ jobs:
           EOF
 
           xcodebuild -exportArchive \
-            -archivePath build/Parro.xcarchive \
-            -exportPath build \
-            -exportOptionsPlist build/ExportOptions.plist \
+            -archivePath ./build/Parro.xcarchive \
+            -exportPath ./build \
+            -exportOptionsPlist ./build/ExportOptions.plist \
             -allowProvisioningUpdates \
-            -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
-            -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+            -authenticationKeyPath ~/private_keys/AuthKey_P22XMUK9Q6.p8 \
+            -authenticationKeyID P22XMUK9Q6 \
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: Parro-${{ steps.export_method.outputs.method }}
           path: ios/build/Parro.ipa
-          retention-days: 7
-
-      - name: Upload dSYMs
-        uses: actions/upload-artifact@v4
-        with:
-          name: Parro-dSYMs
-          path: ios/build/*.dSYM.zip
           retention-days: 7
