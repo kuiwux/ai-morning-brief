@@ -1,0 +1,108 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'ios/**'
+  workflow_dispatch:
+    inputs:
+      export_method:
+        description: 'Export method'
+        required: true
+        type: choice
+        options:
+          - app-store
+          - ad-hoc
+          - development
+        default: 'ad-hoc'
+
+jobs:
+  build:
+    name: Build IPA
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install App Store Connect API Key
+        env:
+          ASC_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$ASC_KEY_CONTENT" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      - name: Build and Archive
+        run: |
+          cd ios
+          xcodebuild archive \
+            -project Parro.xcodeproj \
+            -scheme Parro \
+            -archivePath build/Parro.xcarchive \
+            -destination 'generic/platform=iOS' \
+            -allowProvisioningUpdates \
+            -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
+            -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+
+      - name: Determine Export Method
+        id: export_method
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "method=${{ inputs.export_method }}" >> $GITHUB_OUTPUT
+          else
+            echo "method=ad-hoc" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Export IPA
+        run: |
+          cd ios
+          # Generate ExportOptions plist based on method
+          cat > build/ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>${{ steps.export_method.outputs.method }}</string>
+            <key>teamID</key>
+            <string>W7BY6T84ZX</string>
+            <key>compileBitcode</key>
+            <false/>
+            <key>signingStyle</key>
+            <string>automatic</string>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath build/Parro.xcarchive \
+            -exportPath build \
+            -exportOptionsPlist build/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
+            -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Parro-${{ steps.export_method.outputs.method }}
+          path: ios/build/Parro.ipa
+          retention-days: 7
+
+      - name: Upload dSYMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: Parro-dSYMs
+          path: ios/build/*.dSYM.zip
+          retention-days: 7

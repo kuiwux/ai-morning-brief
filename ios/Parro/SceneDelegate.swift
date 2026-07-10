@@ -32,13 +32,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
 
-        // Route Google OAuth callback to ViewController
-        if url.host == "google-auth", let code = components.queryItems?.first(where: { $0.name == "code" })?.value {
-            NotificationCenter.default.post(name: .parroGoogleAuthCallback, object: nil, userInfo: ["code": code])
-        }
-
         // Route generic auth token
         if let token = components.queryItems?.first(where: { $0.name == "token" })?.value {
+            AppDelegate.pendingAuthToken = token
             NotificationCenter.default.post(name: .parroAuthTokenReceived, object: nil, userInfo: ["token": token])
         }
     }
@@ -47,10 +43,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
-        // Check for pending auth code when app becomes active
-        if let code = AppDelegate.pendingAuthCode {
-            AppDelegate.pendingAuthCode = nil
-            NotificationCenter.default.post(name: .parroGoogleAuthCallback, object: nil, userInfo: ["code": code])
+        // Check for pending auth token when app becomes active
+        if let token = AppDelegate.pendingAuthToken {
+            AppDelegate.pendingAuthToken = nil
+            NotificationCenter.default.post(name: .parroAuthTokenReceived, object: nil, userInfo: ["token": token])
         }
     }
 

@@ -1,18 +1,11 @@
 import UIKit
 import WebKit
-import AuthenticationServices
 
 class ViewController: UIViewController {
 
     // MARK: - Properties
 
     private var webView: WKWebView!
-    private var signInBar: UIStackView!
-    private var appleSignInButton: ASAuthorizationAppleIDButton!
-    private var googleSignInButton: UIButton!
-    private var signInBarTopConstraint: NSLayoutConstraint!
-    private var authOverlayWebView: WKWebView?
-    private var authOverlayBackground: UIView?
 
     // Loading & Error State
     private var loadingIndicator: UIActivityIndicatorView!
@@ -22,9 +15,8 @@ class ViewController: UIViewController {
 
     // MARK: - URL Configuration
     // Primary: public server; fallback: local dev
-    private let serverURL = "https://www.xiaofuinfo.com"
+    private let serverURL = "https://www.xiaofuinfo.com/app/"
     private let backendBaseURL = "https://www.xiaofuinfo.com"
-    private let googleCallbackScheme = "parro"
 
     // MARK: - Token Storage Keys
     private let tokenKey = "com.parro.authToken"
@@ -36,19 +28,11 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
 
-        setupSignInBar()
         setupWebView()
         setupLoadingIndicator()
         loadWebContent()
-        updateSignInBarVisibility()
 
         // Listen for URL scheme auth callbacks from AppDelegate/SceneDelegate
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleGoogleAuthNotification(_:)),
-            name: .parroGoogleAuthCallback,
-            object: nil
-        )
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAuthTokenNotification(_:)),
@@ -58,49 +42,9 @@ class ViewController: UIViewController {
     }
 
     deinit {
+        loadTimeoutTimer?.invalidate()
         webView?.configuration.userContentController.removeAllScriptMessageHandlers()
         NotificationCenter.default.removeObserver(self)
-    }
-
-    // MARK: - Sign-In Bar Setup
-
-    private func setupSignInBar() {
-        // Container stack for sign-in buttons
-        signInBar = UIStackView()
-        signInBar.axis = .horizontal
-        signInBar.spacing = 12
-        signInBar.alignment = .center
-        signInBar.distribution = .fillEqually
-        signInBar.translatesAutoresizingMaskIntoConstraints = false
-        signInBar.isHidden = true
-        view.addSubview(signInBar)
-
-        // Apple Sign-In button (system-provided native button)
-        appleSignInButton = ASAuthorizationAppleIDButton(type: .signIn, style: .black)
-        appleSignInButton.translatesAutoresizingMaskIntoConstraints = false
-        appleSignInButton.addTarget(self, action: #selector(handleAppleSignInTapped), for: .touchUpInside)
-        appleSignInButton.heightAnchor.constraint(equalToConstant: 44).isActive = true
-        signInBar.addArrangedSubview(appleSignInButton)
-
-        // Google Sign-In button (custom styled)
-        googleSignInButton = UIButton(type: .system)
-        googleSignInButton.translatesAutoresizingMaskIntoConstraints = false
-        googleSignInButton.setTitle("使用 Google 登录", for: .normal)
-        googleSignInButton.setTitleColor(.white, for: .normal)
-        googleSignInButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
-        googleSignInButton.backgroundColor = UIColor(red: 0.26, green: 0.52, blue: 0.96, alpha: 1.0) // Google blue
-        googleSignInButton.layer.cornerRadius = 8
-        googleSignInButton.heightAnchor.constraint(equalToConstant: 44).isActive = true
-        googleSignInButton.addTarget(self, action: #selector(handleGoogleSignInTapped), for: .touchUpInside)
-        signInBar.addArrangedSubview(googleSignInButton)
-
-        // Layout: sign-in bar at the top with safe area inset
-        signInBarTopConstraint = signInBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16)
-        NSLayoutConstraint.activate([
-            signInBarTopConstraint,
-            signInBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            signInBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
-        ])
     }
 
     // MARK: - WebView Setup
@@ -114,26 +58,29 @@ class ViewController: UIViewController {
         userContentController.add(self, name: "parro_get_token")
         userContentController.add(self, name: "parro_save_token")
         userContentController.add(self, name: "parro_logout")
-        userContentController.add(self, name: "parro_apple_sign_in")
-        userContentController.add(self, name: "parro_google_sign_in")
+        userContentController.add(self, name: "parro_share")
+        userContentController.add(self, name: "parro_open_url")
         config.userContentController = userContentController
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.translatesAutoresizingMaskIntoConstraints = false
         webView.navigationDelegate = self
+        webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = false
-        webView.scrollView.bounces = false
+        webView.scrollView.bounces = true
         webView.scrollView.contentInsetAdjustmentBehavior = .never
+
+        // Pull-to-refresh
+        let refreshControl = UIRefreshControl()
+        refreshControl.tintColor = UIColor(red: 0.77, green: 0.63, blue: 0.42, alpha: 1.0)
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        webView.scrollView.refreshControl = refreshControl
 
         view.addSubview(webView)
 
-        // Initial constraint: WebView starts below sign-in bar
-        // This constraint will be replaced by updateSignInBarVisibility()
-        webViewToSignInBarConstraint = webView.topAnchor.constraint(equalTo: signInBar.bottomAnchor, constant: 16)
-        webViewToSignInBarConstraint?.isActive = true
-
         NSLayoutConstraint.activate([
-            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            webView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            webView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
@@ -170,10 +117,10 @@ class ViewController: UIViewController {
         errorView.backgroundColor = .systemBackground
         view.addSubview(errorView)
         NSLayoutConstraint.activate([
-            errorView.topAnchor.constraint(equalTo: view.topAnchor),
-            errorView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            errorView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            errorView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+            errorView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            errorView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            errorView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            errorView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor)
         ])
 
         // Error icon
@@ -257,16 +204,38 @@ class ViewController: UIViewController {
         loadWebContent()
     }
 
+    @objc private func handleRefresh() {
+        webView.reload()
+    }
+
     // MARK: - Token Injection
+
+    /// Safely escape a string for embedding in a JS single-quoted string literal
+    private func escapeForJS(_ str: String) -> String {
+        var escaped = ""
+        for char in str {
+            switch char {
+            case "\\": escaped += "\\\\"
+            case "'":  escaped += "\\'"
+            case "\n": escaped += "\\n"
+            case "\r": escaped += "\\r"
+            case "\u{2028}": escaped += "\\u2028"
+            case "\u{2029}": escaped += "\\u2029"
+            default:   escaped.append(char)
+            }
+        }
+        return escaped
+    }
 
     /// Inject the stored JWT token into the WebView's localStorage
     private func injectAuthToken() {
         guard let token = getStoredToken() else { return }
+        let safeToken = escapeForJS(token)
         let js = """
         (function() {
             try {
-                window.localStorage.setItem('parro_token', '\(token.replacingOccurrences(of: "'", with: "\\'"))');
-                window.dispatchEvent(new CustomEvent('parro_auth_changed', { detail: { token: '\(token.replacingOccurrences(of: "'", with: "\\'"))' } }));
+                window.localStorage.setItem('parro_token', '\(safeToken)');
+                window.dispatchEvent(new CustomEvent('parro_auth_changed', { detail: { token: '\(safeToken)' } }));
                 console.log('[Native] Token injected into WebView');
             } catch(e) {
                 console.error('[Native] Failed to inject token:', e);
@@ -278,7 +247,6 @@ class ViewController: UIViewController {
                 print("❌ Failed to inject token: \(error.localizedDescription)")
             } else {
                 print("✅ Token injected successfully")
-                self.updateSignInBarVisibility()
             }
         }
     }
@@ -299,37 +267,10 @@ class ViewController: UIViewController {
         webView.evaluateJavaScript(js, completionHandler: nil)
     }
 
-    // WebView constraints that change based on auth state
-    private var webViewToSafeAreaConstraint: NSLayoutConstraint?
-    private var webViewToSignInBarConstraint: NSLayoutConstraint?
-
-    // MARK: - Sign-In Bar Visibility
-
-    private func updateSignInBarVisibility() {
-        let isLoggedIn = getStoredToken() != nil
-        signInBar.isHidden = isLoggedIn
-
-        // Deactivate old constraints
-        webViewToSafeAreaConstraint?.isActive = false
-        webViewToSignInBarConstraint?.isActive = false
-
-        if isLoggedIn {
-            // Move WebView to top (no sign-in bar)
-            webViewToSafeAreaConstraint = webView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
-            webViewToSafeAreaConstraint?.isActive = true
-        } else {
-            // Restore WebView position below sign-in bar
-            webViewToSignInBarConstraint = webView.topAnchor.constraint(equalTo: signInBar.bottomAnchor, constant: 16)
-            webViewToSignInBarConstraint?.isActive = true
-        }
-        view.layoutIfNeeded()
-    }
-
     // MARK: - Token Storage (UserDefaults)
 
     private func saveToken(_ token: String) {
         UserDefaults.standard.set(token, forKey: tokenKey)
-        UserDefaults.standard.synchronize()
         print("🔑 Token saved to UserDefaults")
     }
 
@@ -340,246 +281,10 @@ class ViewController: UIViewController {
     private func clearToken() {
         UserDefaults.standard.removeObject(forKey: tokenKey)
         UserDefaults.standard.removeObject(forKey: userNameKey)
-        UserDefaults.standard.synchronize()
         print("🗑 Token cleared from UserDefaults")
     }
 
-    // MARK: - Apple Sign-In
-
-    @objc private func handleAppleSignInTapped() {
-        let appleIDProvider = ASAuthorizationAppleIDProvider()
-        let request = appleIDProvider.createRequest()
-        request.requestedScopes = [.fullName, .email]
-
-        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
-        authorizationController.delegate = self
-        authorizationController.presentationContextProvider = self
-        authorizationController.performRequests()
-    }
-
-    /// POST Apple identity token to backend and retrieve JWT
-    private func completeAppleAuth(identityToken: String, fullName: PersonNameComponents?) {
-        guard let url = URL(string: "\(backendBaseURL)/api/auth/apple/callback") else {
-            print("❌ Invalid Apple callback URL")
-            showAuthError("Apple 登录配置错误")
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        var body: [String: Any] = ["identity_token": identityToken]
-        if let fullName = fullName {
-            body["name"] = [
-                "firstName": fullName.givenName ?? "",
-                "lastName": fullName.familyName ?? ""
-            ]
-        }
-
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
-        } catch {
-            print("❌ Failed to serialize Apple auth body: \(error)")
-            showAuthError("Apple 登录数据错误")
-            return
-        }
-
-        print("🍎 Sending Apple identity token to backend...")
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            guard let self = self else { return }
-
-            if let error = error {
-                print("❌ Apple auth network error: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    self.handleAppleAuthFallback(identityToken: identityToken, fullName: fullName)
-                }
-                return
-            }
-
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let token = json["token"] as? String else {
-                print("❌ Invalid response from Apple callback")
-                DispatchQueue.main.async {
-                    self.handleAppleAuthFallback(identityToken: identityToken, fullName: fullName)
-                }
-                return
-            }
-
-            DispatchQueue.main.async {
-                self.saveToken(token)
-                self.injectAuthToken()
-                print("✅ Apple Sign-In complete, token received")
-            }
-        }.resume()
-    }
-
-    /// Fallback: if backend is unreachable, show a simple alert and let the WebView handle it
-    private func handleAppleAuthFallback(identityToken: String, fullName: PersonNameComponents?) {
-        print("⚠️ Backend unreachable for Apple auth, falling back to WebView injection")
-        // Inject the identity token into WebView so PWA can handle it
-        let escapedToken = identityToken.replacingOccurrences(of: "'", with: "\\'")
-        let js = """
-        (function() {
-            window.localStorage.setItem('parro_apple_identity_token', '\(escapedToken)');
-            window.dispatchEvent(new CustomEvent('parro_apple_auth_fallback', {
-                detail: { identityToken: '\(escapedToken)' }
-            }));
-        })();
-        """
-        webView.evaluateJavaScript(js, completionHandler: nil)
-
-        let alert = UIAlertController(
-            title: "Apple 登录",
-            message: "已获取 Apple 身份信息，但无法连接后端服务。请稍后重试。",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
-        present(alert, animated: true)
-    }
-
-    // MARK: - Google Sign-In (via WebView overlay)
-
-    @objc private func handleGoogleSignInTapped() {
-        // Step 1: Fetch Google OAuth URL from backend
-        guard let url = URL(string: "\(backendBaseURL)/api/auth/google/url") else {
-            print("❌ Invalid Google OAuth URL endpoint")
-            showAuthError("Google 登录配置错误")
-            return
-        }
-
-        print("🔵 Fetching Google OAuth URL...")
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            guard let self = self else { return }
-
-            if let error = error {
-                print("❌ Failed to fetch Google OAuth URL: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    self.handleGoogleAuthFallback()
-                }
-                return
-            }
-
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let oauthURLString = json["url"] as? String else {
-                print("❌ Invalid Google OAuth URL response")
-                DispatchQueue.main.async {
-                    self.handleGoogleAuthFallback()
-                }
-                return
-            }
-
-            DispatchQueue.main.async {
-                self.launchGoogleOAuthOverlay(oauthURL: oauthURLString)
-            }
-        }.resume()
-    }
-
-    /// Launch an overlay WebView for Google OAuth flow
-    private func launchGoogleOAuthOverlay(oauthURL: String) {
-        guard let url = URL(string: oauthURL) else {
-            print("❌ Invalid Google OAuth URL")
-            showAuthError("Google 登录 URL 无效")
-            return
-        }
-
-        // Create a semi-transparent background
-        let background = UIView(frame: view.bounds)
-        background.backgroundColor = UIColor.black.withAlphaComponent(0.5)
-        background.alpha = 0
-        background.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(background)
-        NSLayoutConstraint.activate([
-            background.topAnchor.constraint(equalTo: view.topAnchor),
-            background.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            background.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            background.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
-        authOverlayBackground = background
-
-        // Add a close button
-        let closeButton = UIButton(type: .system)
-        closeButton.setTitle("✕ 取消", for: .normal)
-        closeButton.setTitleColor(.white, for: .normal)
-        closeButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        closeButton.translatesAutoresizingMaskIntoConstraints = false
-        closeButton.addTarget(self, action: #selector(dismissAuthOverlay), for: .touchUpInside)
-        background.addSubview(closeButton)
-
-        // Create overlay WebView for OAuth
-        let config = WKWebViewConfiguration()
-        let overlayWebView = WKWebView(frame: .zero, configuration: config)
-        overlayWebView.navigationDelegate = self
-        overlayWebView.translatesAutoresizingMaskIntoConstraints = false
-        overlayWebView.layer.cornerRadius = 12
-        overlayWebView.clipsToBounds = true
-        background.addSubview(overlayWebView)
-        authOverlayWebView = overlayWebView
-
-        NSLayoutConstraint.activate([
-            closeButton.topAnchor.constraint(equalTo: background.safeAreaLayoutGuide.topAnchor, constant: 12),
-            closeButton.trailingAnchor.constraint(equalTo: background.trailingAnchor, constant: -20),
-            closeButton.heightAnchor.constraint(equalToConstant: 44),
-
-            overlayWebView.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: 8),
-            overlayWebView.bottomAnchor.constraint(equalTo: background.bottomAnchor, constant: -40),
-            overlayWebView.leadingAnchor.constraint(equalTo: background.leadingAnchor, constant: 20),
-            overlayWebView.trailingAnchor.constraint(equalTo: background.trailingAnchor, constant: -20)
-        ])
-
-        // Animate in
-        UIView.animate(withDuration: 0.3) {
-            background.alpha = 1
-        }
-
-        // Load the OAuth URL
-        let request = URLRequest(url: url)
-        overlayWebView.load(request)
-        print("🔵 Google OAuth overlay launched")
-    }
-
-    @objc private func dismissAuthOverlay() {
-        UIView.animate(withDuration: 0.3, animations: {
-            self.authOverlayBackground?.alpha = 0
-        }) { _ in
-            self.authOverlayWebView?.stopLoading()
-            self.authOverlayWebView?.removeFromSuperview()
-            self.authOverlayWebView = nil
-            self.authOverlayBackground?.removeFromSuperview()
-            self.authOverlayBackground = nil
-        }
-    }
-
-    /// Fallback: if backend is unreachable, let the WebView PWA handle Google OAuth
-    private func handleGoogleAuthFallback() {
-        print("⚠️ Backend unreachable for Google OAuth URL, falling back to WebView")
-        let js = """
-        (function() {
-            console.log('[Native] Google auth fallback triggered');
-            window.dispatchEvent(new CustomEvent('parro_google_auth_fallback'));
-        })();
-        """
-        webView.evaluateJavaScript(js, completionHandler: nil)
-
-        let alert = UIAlertController(
-            title: "Google 登录",
-            message: "无法连接后端服务，请检查网络后重试。",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
-        present(alert, animated: true)
-    }
-
-    // MARK: - Notification Handlers (URL Scheme Callbacks)
-
-    /// Handle Google OAuth callback from parro:// URL scheme
-    @objc private func handleGoogleAuthNotification(_ notification: Notification) {
-        guard let code = notification.userInfo?["code"] as? String else { return }
-        print("🔵 Received Google OAuth code via URL scheme")
-        handleGoogleOAuthCallback(code: code)
-    }
+    // MARK: - Notification Handlers
 
     /// Handle generic auth token from parro:// URL scheme
     @objc private func handleAuthTokenNotification(_ notification: Notification) {
@@ -587,58 +292,6 @@ class ViewController: UIViewController {
         print("🔑 Received auth token via URL scheme")
         saveToken(token)
         injectAuthToken()
-    }
-
-    /// Called when Google OAuth callback URL is intercepted with the authorization code
-    private func handleGoogleOAuthCallback(code: String) {
-        print("🔵 Google OAuth code received, exchanging for token...")
-        dismissAuthOverlay()
-
-        guard let url = URL(string: "\(backendBaseURL)/api/auth/google/callback?code=\(code)") else {
-            print("❌ Invalid Google callback URL")
-            showAuthError("Google 登录回调错误")
-            return
-        }
-
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            guard let self = self else { return }
-
-            if let error = error {
-                print("❌ Google token exchange error: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    self.showAuthError("Google 登录失败，请重试")
-                }
-                return
-            }
-
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let token = json["token"] as? String else {
-                print("❌ Invalid token response from Google callback")
-                DispatchQueue.main.async {
-                    self.showAuthError("Google 登录验证失败")
-                }
-                return
-            }
-
-            DispatchQueue.main.async {
-                self.saveToken(token)
-                self.injectAuthToken()
-                print("✅ Google Sign-In complete, token received")
-            }
-        }.resume()
-    }
-
-    // MARK: - Utility
-
-    private func showAuthError(_ message: String) {
-        let alert = UIAlertController(
-            title: "登录失败",
-            message: message,
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
-        present(alert, animated: true)
     }
 
     // MARK: - Status Bar
@@ -660,6 +313,7 @@ extension ViewController: WKNavigationDelegate {
         if webView == self.webView {
             print("✅ Web content loaded successfully")
             stopLoading()
+            webView.scrollView.refreshControl?.endRefreshing()
             // Inject stored token after page load
             injectAuthToken()
         }
@@ -681,53 +335,51 @@ extension ViewController: WKNavigationDelegate {
         }
     }
 
-    /// Accept expired/invalid SSL certificates (server cert needs renewal)
+    /// Default SSL validation — certificate is valid (Let's Encrypt)
     func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        // Default SSL validation — certificate is now valid (Let's Encrypt)
         completionHandler(.performDefaultHandling, nil)
     }
+}
 
-    /// Intercept navigation in the Google OAuth overlay to capture the authorization code
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        // Only intercept in the auth overlay, not the main WebView
-        guard webView == authOverlayWebView else {
-            decisionHandler(.allow)
-            return
+// MARK: - WKUIDelegate (Required for JS dialogs)
+
+extension ViewController: WKUIDelegate {
+
+    func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler() })
+        present(alert, animated: true)
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in completionHandler(false) })
+        alert.addAction(UIAlertAction(title: "确定", style: .default) { _ in completionHandler(true) })
+        present(alert, animated: true)
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        let alert = UIAlertController(title: nil, message: prompt, preferredStyle: .alert)
+        alert.addTextField { textField in
+            textField.text = defaultText
         }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in completionHandler(nil) })
+        alert.addAction(UIAlertAction(title: "确定", style: .default) { _ in
+            completionHandler(alert.textFields?.first?.text)
+        })
+        present(alert, animated: true)
+    }
 
-        guard let url = navigationAction.request.url else {
-            decisionHandler(.allow)
-            return
-        }
-
-        let urlString = url.absoluteString
-        print("🔍 Auth overlay navigating to: \(urlString)")
-
-        // Check if this is the Google OAuth callback (contains authorization code)
-        // The backend callback URL typically looks like:
-        // http://localhost:8899/api/auth/google/callback?code=xxx&...
-        if urlString.contains("/api/auth/google/callback") || urlString.contains("code=") {
-            // Parse the authorization code from URL query parameters
-            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-               let codeItem = components.queryItems?.first(where: { $0.name == "code" }),
-               let code = codeItem.value {
-                decisionHandler(.cancel)
-                handleGoogleOAuthCallback(code: code)
-                return
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        // Handle target="_blank" links by opening in Safari
+        if let url = navigationAction.request.url {
+            UIApplication.shared.open(url, options: [:]) { success in
+                if !success {
+                    print("❌ Failed to open URL: \(url)")
+                }
             }
-
-            // Also try parsing from URL fragment or other patterns
-            if let regex = try? NSRegularExpression(pattern: "[?&]code=([^&]+)", options: []),
-               let match = regex.firstMatch(in: urlString, options: [], range: NSRange(urlString.startIndex..., in: urlString)),
-               let range = Range(match.range(at: 1), in: urlString) {
-                let code = String(urlString[range])
-                decisionHandler(.cancel)
-                handleGoogleOAuthCallback(code: code)
-                return
-            }
         }
-
-        decisionHandler(.allow)
+        return nil
     }
 }
 
@@ -746,17 +398,11 @@ extension ViewController: WKScriptMessageHandler {
         case "parro_logout":
             handleLogout(message: message)
 
-        case "parro_apple_sign_in":
-            // WebView requested Apple Sign-In
-            DispatchQueue.main.async {
-                self.handleAppleSignInTapped()
-            }
+        case "parro_share":
+            handleShare(message: message)
 
-        case "parro_google_sign_in":
-            // WebView requested Google Sign-In
-            DispatchQueue.main.async {
-                self.handleGoogleSignInTapped()
-            }
+        case "parro_open_url":
+            handleOpenURL(message: message)
 
         default:
             print("⚠️ Unknown JS bridge message: \(message.name)")
@@ -766,7 +412,8 @@ extension ViewController: WKScriptMessageHandler {
     /// Return the stored JWT token to the WebView
     private func handleGetToken(message: WKScriptMessage) {
         let token = getStoredToken() ?? ""
-        let js = "window.__parro_token_callback && window.__parro_token_callback('\(token.replacingOccurrences(of: "'", with: "\\'"))');"
+        let safeToken = escapeForJS(token)
+        let js = "window.__parro_token_callback && window.__parro_token_callback('\(safeToken)');"
 
         webView.evaluateJavaScript(js) { _, error in
             if let error = error {
@@ -784,7 +431,6 @@ extension ViewController: WKScriptMessageHandler {
             return
         }
         saveToken(token)
-        updateSignInBarVisibility()
         print("💾 Token saved via JS Bridge")
     }
 
@@ -792,61 +438,40 @@ extension ViewController: WKScriptMessageHandler {
     private func handleLogout(message: WKScriptMessage) {
         clearToken()
         notifyWebViewLogout()
-        updateSignInBarVisibility()
         print("🚪 Logout via JS Bridge")
     }
-}
 
-// MARK: - ASAuthorizationControllerDelegate (Apple Sign-In)
+    /// Native Share Sheet
+    private func handleShare(message: WKScriptMessage) {
+        guard let body = message.body as? [String: Any] else { return }
+        let title = body["title"] as? String ?? ""
+        let url = body["url"] as? String ?? ""
+        let text = body["text"] as? String ?? ""
 
-extension ViewController: ASAuthorizationControllerDelegate {
+        var items: [Any] = []
+        if !title.isEmpty { items.append(title) }
+        if !text.isEmpty { items.append(text) }
+        if let shareURL = URL(string: url), !url.isEmpty { items.append(shareURL) }
 
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
-            // Extract identity token
-            guard let identityTokenData = appleIDCredential.identityToken,
-                  let identityToken = String(data: identityTokenData, encoding: .utf8) else {
-                print("❌ Failed to extract Apple identity token")
-                showAuthError("无法获取 Apple 身份信息")
-                return
-            }
+        guard !items.isEmpty else { return }
 
-            let fullName = appleIDCredential.fullName
-            let email = appleIDCredential.email
-
-            // Log user info (email is only available on first sign-in)
-            if let email = email {
-                print("🍎 Apple Sign-In: email=\(email)")
-            }
-            if let givenName = fullName?.givenName {
-                print("🍎 Apple Sign-In: name=\(givenName) \(fullName?.familyName ?? "")")
-                let displayName = "\(givenName) \(fullName?.familyName ?? "")".trimmingCharacters(in: .whitespaces)
-                if !displayName.isEmpty {
-                    UserDefaults.standard.set(displayName, forKey: userNameKey)
-                }
-            }
-
-            print("🍎 Apple identity token received, sending to backend...")
-            completeAppleAuth(identityToken: identityToken, fullName: fullName)
+        let activityVC = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
         }
+        present(activityVC, animated: true)
     }
 
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        let nsError = error as NSError
-        if nsError.code == ASAuthorizationError.canceled.rawValue {
-            print("🍎 Apple Sign-In cancelled by user")
-        } else {
-            print("❌ Apple Sign-In error: \(error.localizedDescription)")
-            showAuthError("Apple 登录出错：\(error.localizedDescription)")
+    /// Open URL in Safari (not in WebView)
+    private func handleOpenURL(message: WKScriptMessage) {
+        guard let body = message.body as? [String: Any],
+              let urlString = body["url"] as? String,
+              let url = URL(string: urlString) else { return }
+        UIApplication.shared.open(url, options: [:]) { success in
+            if !success {
+                print("❌ Failed to open URL: \(url)")
+            }
         }
-    }
-}
-
-// MARK: - ASAuthorizationControllerPresentationContextProviding
-
-extension ViewController: ASAuthorizationControllerPresentationContextProviding {
-
-    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return view.window!
     }
 }
